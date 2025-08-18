@@ -3,8 +3,8 @@ require('dotenv').config();
 module.exports = {
   development: {
     username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'your_password_here',
-    database: process.env.DB_NAME || 'myteamcamp_db',
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME || 'myteamcamp',
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
@@ -18,8 +18,8 @@ module.exports = {
   },
   test: {
     username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'your_password_here',
-    database: process.env.DB_NAME || 'myteamcamp_test_db',
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME || 'myteamcamp_test',
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
@@ -40,8 +40,8 @@ module.exports = {
     dialect: 'postgres',
     logging: false,
     pool: {
-      max: 5,
-      min: 0,
+      max: 10,
+      min: 2,
       acquire: 30000,
       idle: 10000
     },

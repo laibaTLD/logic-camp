@@ -1,169 +1,89 @@
-import { Model, DataTypes } from 'sequelize';
-import { sequelize } from './index';
+import { Model, DataTypes, Sequelize, Optional } from 'sequelize';
 
-interface TeamAttributes {
+export interface TeamAttributes {
   id: number;
   name: string;
-  description: string;
-  avatar?: string;
+  description?: string;
   isActive: boolean;
-  maxMembers?: number;
-  ownerId: number;
-  settings: {
-    allowMemberInvites: boolean;
-    allowProjectCreation: boolean;
-    allowTaskAssignment: boolean;
-    notificationPreferences: {
-      email: boolean;
-      push: boolean;
-      slack: boolean;
-    };
-  };
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdById: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-interface TeamCreationAttributes extends Omit<TeamAttributes, 'id' | 'createdAt' | 'updatedAt'> {
-  settings?: TeamAttributes['settings'];
-}
+export interface TeamCreationAttributes extends Optional<TeamAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
 
 class Team extends Model<TeamAttributes, TeamCreationAttributes> implements TeamAttributes {
   public id!: number;
   public name!: string;
-  public description!: string;
-  public avatar?: string;
+  public description?: string;
   public isActive!: boolean;
-  public maxMembers?: number;
-  public ownerId!: number;
-  public settings!: {
-    allowMemberInvites: boolean;
-    allowProjectCreation: boolean;
-    allowTaskAssignment: boolean;
-    notificationPreferences: {
-      email: boolean;
-      push: boolean;
-      slack: boolean;
-    };
-  };
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  public createdById!: number;
+  public createdAt!: Date;
+  public updatedAt!: Date;
 
-  // Instance methods
-  public canAddMember(): boolean {
-    if (!this.maxMembers) return true;
-    // This would need to be calculated based on actual member count
-    // For now, return true if maxMembers is not set
-    return true;
-  }
-
-  public getDefaultSettings() {
-    return {
-      allowMemberInvites: true,
-      allowProjectCreation: true,
-      allowTaskAssignment: true,
-      notificationPreferences: {
-        email: true,
-        push: true,
-        slack: false,
-      },
-    };
-  }
-
-  public toJSON(): any {
-    const values = Object.assign({}, this.get());
-    values.canAddMember = this.canAddMember();
-    return values;
+  // Associations will be set up after all models are initialized
+  public static associate(models: any) {
+    // This will be called after all models are loaded
   }
 }
 
-Team.init(
-  {
-    id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    name: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-      validate: {
-        len: [2, 100],
-        notEmpty: true,
+export const initTeam = (sequelize: Sequelize) => {
+  Team.init(
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
       },
-    },
-    description: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-      },
-    },
-    avatar: {
-      type: DataTypes.STRING(500),
-      allowNull: true,
-      validate: {
-        isUrl: true,
-      },
-    },
-    isActive: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
-    },
-    maxMembers: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      validate: {
-        min: 1,
-        max: 1000,
-      },
-    },
-    ownerId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'users',
-        key: 'id',
-      },
-    },
-    settings: {
-      type: DataTypes.JSONB,
-      allowNull: false,
-      defaultValue: {
-        allowMemberInvites: true,
-        allowProjectCreation: true,
-        allowTaskAssignment: true,
-        notificationPreferences: {
-          email: true,
-          push: true,
-          slack: false,
+      name: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        validate: {
+          len: [1, 100],
         },
       },
-    },
-  },
-  {
-    sequelize,
-    tableName: 'teams',
-    timestamps: true,
-    hooks: {
-      beforeValidate: (team: Team) => {
-        if (!team.settings) {
-          team.settings = team.getDefaultSettings();
-        }
+      description: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      isActive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      createdById: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'users',
+          key: 'id',
+        },
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
       },
     },
-    indexes: [
-      {
-        fields: ['name'],
-      },
-      {
-        fields: ['ownerId'],
-      },
-      {
-        fields: ['isActive'],
-      },
-    ],
-  }
-);
+    {
+      sequelize,
+      tableName: 'teams',
+      timestamps: true,
+      indexes: [
+        {
+          fields: ['isActive'],
+        },
+        {
+          fields: ['createdById'],
+        },
+      ],
+    }
+  );
+};
 
 export default Team;
