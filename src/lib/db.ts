@@ -2,19 +2,32 @@
 import { initializeDatabase } from './init-db';
 
 let isInitialized = false;
+let initializationPromise: Promise<boolean> | null = null;
 
 /**
  * Ensures database is initialized before any operations
  * This prevents the "Cannot read properties of undefined" error
  */
 export async function ensureDbInitialized() {
-  if (!isInitialized) {
-    console.log('🔄 Database not initialized, initializing now...');
-    await initializeDatabase();
-    isInitialized = true;
-    console.log('✅ Database initialization complete');
+  if (isInitialized) {
+    return true;
   }
-  return isInitialized;
+
+  if (!initializationPromise) {
+    console.log('🔄 Database not initialized, initializing now...');
+    initializationPromise = (async () => {
+      try {
+        await initializeDatabase();
+        isInitialized = true;
+        console.log('✅ Database initialization complete');
+        return true;
+      } finally {
+        initializationPromise = null;
+      }
+    })();
+  }
+
+  return initializationPromise;
 }
 
 /**
@@ -32,4 +45,5 @@ export async function getModels() {
 // Reset initialization flag (useful for testing)
 export function resetDbInitialization() {
   isInitialized = false;
+  initializationPromise = null;
 }

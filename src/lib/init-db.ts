@@ -1,5 +1,5 @@
 // src/lib/init-db.ts
-import { sequelize, testConnection } from './database';
+import { sequelize, testConnection, syncDatabase } from './database';
 import { initializeModels, setupAssociations } from '../models';
 
 export async function initializeDatabase() {
@@ -20,6 +20,11 @@ export async function initializeDatabase() {
     console.log('🔗 Setting up model associations...');
     setupAssociations();
     console.log('✅ Model associations configured');
+
+    // Sync database after associations are set
+    console.log('🗄️ Syncing database schema...');
+    await syncDatabase();
+    console.log('✅ Database schema synced');
 
     console.log('🎉 Database initialized successfully!');
     return true;

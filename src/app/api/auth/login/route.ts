@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import User from "@/models/User";
+import { getModels } from "@/lib/db";
 import { SignJWT } from "jose";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key";
@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
     }
 
+    const { User } = await getModels();
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
