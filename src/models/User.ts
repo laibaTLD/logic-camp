@@ -1,4 +1,4 @@
-import { Model, DataTypes, Sequelize, Optional } from "sequelize";
+const { Model, DataTypes } = require("sequelize");
 
 // Attributes interface
 export interface UserAttributes {
@@ -15,22 +15,26 @@ export interface UserAttributes {
 
 // Creation attributes: id, createdAt, updatedAt are optional
 export interface UserCreationAttributes
-  extends Optional<UserAttributes, "id" | "createdAt" | "updatedAt"> {}
+  extends Omit<UserAttributes, "id" | "createdAt" | "updatedAt"> {
+  id?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 // Model class
 class User extends Model<UserAttributes, UserCreationAttributes>
   implements UserAttributes {
-  public id!: number;
-  public name!: string;
-  public email!: string;
-  public password!: string;
-  public role!: "admin" | "user";
-  public isActive!: boolean;
-  public isApproved!: boolean;
+  declare id: number;
+  declare name: string;
+  declare email: string;
+  declare password: string;
+  declare role: "admin" | "user";
+  declare isActive: boolean;
+  declare isApproved: boolean;
 
   // Timestamps added by Sequelize automatically
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
 
   // Associations placeholder
   public static associate(models: any) {
@@ -39,11 +43,11 @@ class User extends Model<UserAttributes, UserCreationAttributes>
 }
 
 // Initialize the model
-export const initUser = (sequelize: Sequelize) => {
+export const initUser = (sequelize: any) => {
   User.init(
     {
       id: {
-        type: DataTypes.INTEGER.UNSIGNED,
+        type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true,
       },
@@ -92,4 +96,5 @@ export const initUser = (sequelize: Sequelize) => {
   );
 };
 
+export { User };
 export default User;

@@ -8,97 +8,67 @@ const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 // ------------------
 // Helper: Verify Admin
 // ------------------
-function verifyAdmin(req: NextRequest) {
+async function verifyAdmin(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
-  if (!authHeader) return null;
+  if (!authHeader) return false;
 
   const token = authHeader.split(" ")[1];
-  if (!token) return null;
+  if (!token) return false;
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    if (decoded.role !== "admin") return null; // ❌ not admin
-    return decoded; // ✅ valid admin
+    const decoded: any = jwt.verify(token, JWT_SECRET);
+    return decoded.role === "admin";
   } catch {
-    return null;
+    return false;
   }
 }
 
 // ------------------
-// GET (single user)
+// PUT Handler
 // ------------------
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!verifyAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-
-  const { User } = await getModels();
-  try {
-    const user = await User.findByPk(params.id);
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-
-    return NextResponse.json(user);
-  } catch {
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id: idParam } = await params;
+  const id = Number(idParam);
+  if (isNaN(id)) {
+    return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
   }
-}
 
-// ------------------
-// PUT (update user)
-// ------------------
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!verifyAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-
-  const { User } = await getModels();
-  try {
-    const data = await req.json();
-    const user = await User.findByPk(params.id);
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-
-    await user.update(data);
-    return NextResponse.json({ message: "User updated successfully", user });
-  } catch {
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+  // 1. Verify admin
+  const isAdmin = await verifyAdmin(req);
+  if (!isAdmin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-}
 
-// ------------------
-// DELETE (remove user)
-// ------------------
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!verifyAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-
-  const { User } = await getModels();
+  // 2. Get request body
+  let body;
   try {
-    const user = await User.findByPk(params.id);
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-
-    await user.destroy();
-    return NextResponse.json({ message: "User deleted successfully" });
+    body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
-}
 
-// ------------------
-// PATCH (approve/reject user)
-// ------------------
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!verifyAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  const { name, email, role, isApproved } = body;
 
-  const { User } = await getModels();
+  if (!name && !email && !role && isApproved === undefined) {
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+  }
+
   try {
-    const { action } = await req.json(); // { "action": "approve" } or { "action": "reject" }
-    const user = await User.findByPk(params.id);
+    const { User } = await getModels();
+    const user = await User.findByPk(id); // Sequelize
 
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-    if (action === "approve") user.isApproved = true;
-    else if (action === "reject") user.isApproved = false;
-    else return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (role) user.role = role;
+    if (isApproved !== undefined) user.isApproved = isApproved;
 
     await user.save();
 
-    return NextResponse.json({ message: `User ${action}d successfully`, user });
-  } catch {
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    return NextResponse.json({ message: "User updated", user });
+  } catch (err: any) {
+    console.error(err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

@@ -1,7 +1,32 @@
 // src/app/api/admin/users/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getModels } from "@/lib/db";
-import { checkAdmin } from "@/middleware/checkAdmin";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+
+// ----------------------
+// Helper: Verify Admin
+// ----------------------
+function checkAdmin(req: NextRequest) {
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    if (decoded.role !== "admin") {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
+    return null; // ✅ means authorized
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 });
+  }
+}
 
 // ----------------------
 // GET all users (admin only)
@@ -11,8 +36,8 @@ export async function GET(req: NextRequest) {
   if (authError) return authError; // ❌ unauthorized/forbidden
 
   try {
-    const { User } = await getModels();
-    const users = await User.findAll({
+    const models = await getModels();
+    const users = await (models.User as any).findAll({
       order: [["id", "ASC"]],
       attributes: ["id", "name", "email", "role", "isActive", "isApproved"],
     });
@@ -31,38 +56,35 @@ export async function GET(req: NextRequest) {
 // PUT (approve OR edit)
 // ----------------------
 export async function PUT(req: NextRequest) {
+  console.log(req)
   const authError = checkAdmin(req);
   if (authError) return authError;
 
   try {
     const { id, approve, name, email, role, isActive } = await req.json();
 
-    if (!id)
+    if (!id) {
       return NextResponse.json(
         { success: false, error: "User ID required" },
         { status: 400 }
       );
+    }
 
-    const { User } = await getModels();
-    const user = await User.findByPk(id);
-    if (!user)
+    const models = await getModels();
+    const user = await (models.User as any).findByPk(id);
+    if (!user) {
       return NextResponse.json(
         { success: false, error: "User not found" },
         { status: 404 }
       );
+    }
 
     if (approve === true) {
       await user.update({ isApproved: true });
-      return NextResponse.json({
-        success: true,
-        message: "User approved successfully",
-      });
+      return NextResponse.json({ success: true, message: "User approved successfully" });
     } else if (approve === false) {
       await user.update({ isApproved: false });
-      return NextResponse.json({
-        success: true,
-        message: "User rejected successfully",
-      });
+      return NextResponse.json({ success: true, message: "User rejected successfully" });
     } else {
       await user.update({ name, email, role, isActive });
       return NextResponse.json({
@@ -90,25 +112,24 @@ export async function DELETE(req: NextRequest) {
   try {
     const { id } = await req.json();
 
-    if (!id)
+    if (!id) {
       return NextResponse.json(
         { success: false, error: "User ID required" },
         { status: 400 }
       );
+    }
 
-    const { User } = await getModels();
-    const deletedRows = await User.destroy({ where: { id } });
+    const models = await getModels();
+    const deletedRows = await (models.User as any).destroy({ where: { id } });
 
-    if (deletedRows === 0)
+    if (deletedRows === 0) {
       return NextResponse.json(
         { success: false, error: "User not found" },
         { status: 404 }
       );
+    }
 
-    return NextResponse.json({
-      success: true,
-      message: "User deleted successfully",
-    });
+    return NextResponse.json({ success: true, message: "User deleted successfully" });
   } catch (err: any) {
     console.error("DELETE /admin/users error:", err.message);
     return NextResponse.json(
