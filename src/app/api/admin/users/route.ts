@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const models = await getModels();
-    const users = await (models.User as any).findAll({
+    const users = await models.User.findAll({
       order: [["id", "ASC"]],
       attributes: ["id", "name", "email", "role", "isActive", "isApproved"],
     });
@@ -56,7 +56,6 @@ export async function GET(req: NextRequest) {
 // PUT (approve OR edit)
 // ----------------------
 export async function PUT(req: NextRequest) {
-  console.log(req)
   const authError = checkAdmin(req);
   if (authError) return authError;
 
@@ -71,7 +70,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const models = await getModels();
-    const user = await (models.User as any).findByPk(id);
+    const user = await models.User.findByPk(id);
     if (!user) {
       return NextResponse.json(
         { success: false, error: "User not found" },
@@ -120,7 +119,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     const models = await getModels();
-    const deletedRows = await (models.User as any).destroy({ where: { id } });
+    const deletedRows = await models.User.destroy({ where: { id } });
 
     if (deletedRows === 0) {
       return NextResponse.json(

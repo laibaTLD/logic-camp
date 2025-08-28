@@ -26,9 +26,8 @@ export const sequelize = new Sequelize(
   }
 );
 
-
 // ✅ Test connection
-export const testConnection = async () => {
+export const testConnection = async (): Promise<void> => {
   try {
     await sequelize.authenticate();
     console.log("✅ Database connection established.");
@@ -39,7 +38,7 @@ export const testConnection = async () => {
 };
 
 // ✅ Sync database
-export const syncDatabase = async () => {
+export const syncDatabase = async (): Promise<void> => {
   try {
     await sequelize.sync({ alter: process.env.NODE_ENV === "development" });
     console.log(

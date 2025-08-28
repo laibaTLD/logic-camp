@@ -2,7 +2,7 @@
 import { sequelize, testConnection, syncDatabase } from './database';
 import { initializeModels, setupAssociations } from '../models';
 
-export async function initializeDatabase() {
+export async function initializeDatabase(): Promise<boolean> {
   try {
     console.log('🔄 Initializing database...');
 
@@ -42,7 +42,7 @@ export async function initializeDatabase() {
 }
 
 // Additional helper function for testing database operations
-export async function testDatabaseOperations() {
+export async function testDatabaseOperations(): Promise<void> {
   try {
     console.log('🧪 Testing basic database operations...');
     
