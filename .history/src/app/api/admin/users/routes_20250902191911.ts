@@ -3,27 +3,18 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getModels } from "@/lib/db";
-import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+import { verifyToken } from "@/lib/auth";
 
 // Helper: Verify Admin
-function checkAdmin(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+async function checkAdmin(req: NextRequest) {
+  const payload = await verifyToken(req);
+  if (!payload) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
-
-  const token = authHeader.split(" ")[1];
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    if (decoded.role !== "admin") {
-      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
-    }
-    return null; // ✅ means authorized
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 });
+  if (payload.role !== "admin") {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
+  return null; // ✅ means authorized
 }
 
 // GET user by ID with detailed information
