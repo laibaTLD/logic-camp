@@ -454,7 +454,6 @@ export default function useAdminData() {
 
     // team actions
     createTeam,
-    editTeam,
 
     // project actions
     openProject,

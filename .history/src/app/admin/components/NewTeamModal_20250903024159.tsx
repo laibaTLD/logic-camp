@@ -8,7 +8,7 @@ import useAdminData from "../hooks/useAdminData";
 interface NewTeamModalProps {
   isOpen: boolean;
   onClose: () => void;
-  users: { id: number; name: string; email: string }[];
+  users: { id: number; name: string }[];
 }
 
 export default function NewTeamModal({ isOpen, onClose, users }: NewTeamModalProps) {
