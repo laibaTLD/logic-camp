@@ -52,32 +52,41 @@ export default function AddTaskModal({
     setError(null);
 
     try {
-      const taskData = {
+      const taskData: any = {
         title: formData.title,
-        description: formData.description || null,
+        description: formData.description,
         priority: formData.priority,
-        status: formData.status,
-        assignedToId: formData.assignedToId ? parseInt(formData.assignedToId) : null,
-        dueDate: formData.dueDate || null,
-        estimatedHours: formData.estimatedHours ? parseFloat(formData.estimatedHours) : null,
-        projectId: projectId,
+        status: "todo",
+        projectId: project.id,
       };
 
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
+      if (formData.assignedToId) {
+        taskData.assignedToId = parseInt(formData.assignedToId);
+      }
+
+      if (formData.dueDate) {
+        taskData.dueDate = formData.dueDate;
+      }
+
+      if (formData.estimatedHours) {
+        taskData.estimatedHours = parseFloat(formData.estimatedHours);
+      }
+
+      const response = await fetch("/api/tasks", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify(taskData),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData?.error || 'Failed to create task');
+        throw new Error(errorData?.error || "Failed to create task");
       }
 
-      onTaskCreated();
+      onTaskAdded();
       onClose();
     } catch (error: any) {
       console.error("Error creating task:", error);
@@ -94,34 +103,36 @@ export default function AddTaskModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-2xl p-4 animate-fadeIn" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fadeIn" onClick={onClose}>
       {/* Modal */}
       <div 
-        className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 border border-white/20 backdrop-blur-2xl rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative animate-scaleIn text-gray-100"
+        className="bg-gray-900/90 border border-white/20 backdrop-blur-xl rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-[0_12px_40px_rgba(0,0,0,0.35)] relative animate-scaleIn text-gray-100 p-6 space-y-8"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header with Gradient */}
-        <div className="relative bg-gradient-to-r from-green-600/20 to-blue-600/20 border-b border-white/10">
-          <div className="flex items-center justify-between p-6">
-            <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500/30 to-blue-500/30 border border-green-400/30 flex items-center justify-center backdrop-blur-sm">
-                <Plus className="h-6 w-6 text-green-300" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">Add New Task</h2>
-                <p className="text-sm text-gray-300 mt-1">Create a new task for this project</p>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              disabled={loading}
-              className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <h2 className="text-xl font-semibold text-white">
+            Add Task to {project.name}
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-white/10 transition"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-          {/* Decorative gradient line */}
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-green-400/50 to-transparent"></div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
         </div>
 
         {/* Form */}

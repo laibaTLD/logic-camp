@@ -89,16 +89,17 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, onOpenProject
 
         {/* Action Buttons */}
         <div className="mt-4 flex gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggleTasks();
-            }}
-            className="flex-1 px-3 py-2 text-xs bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-300 hover:text-blue-200 rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-1"
-          >
-            {showTasks ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            {showTasks ? 'Hide Tasks' : `Tasks (${tasks.length})`}
-          </button>
+          {onAddTask && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddTask(project);
+              }}
+              className="flex-1 px-3 py-2 text-xs bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-300 hover:text-blue-200 rounded-lg transition-all duration-200 font-medium"
+            >
+              Add Task
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -109,64 +110,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, onOpenProject
             Delete
           </button>
         </div>
-
-        {/* Tasks List */}
-        {showTasks && (
-          <div className="mt-4 pt-4 border-t border-white/10">
-            {tasks.length === 0 ? (
-              <p className="text-gray-500 text-xs text-center py-2">No tasks found</p>
-            ) : (
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {tasks.map((task) => (
-                  <div key={task.id} className="bg-gray-800/30 rounded-lg p-3 border border-white/5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-medium text-white line-clamp-1">{task.title}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className={`text-xs ${getPriorityColor(task.priority)}`}>
-                            {task.priority?.toUpperCase()}
-                          </span>
-                          <span className={`text-xs ${getStatusColor(task.status)}`}>
-                            {task.status?.replace('-', ' ').toUpperCase()}
-                          </span>
-                        </div>
-                        {task.assignedTo && (
-                          <p className="text-xs text-gray-400 mt-1">👤 {task.assignedTo.name}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-1 flex-shrink-0">
-                        {onEditTask && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEditTask(task);
-                            }}
-                            className="p-1 text-blue-400 hover:text-blue-300 hover:bg-blue-600/20 rounded transition-colors"
-                            title="Edit Task"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </button>
-                        )}
-                        {onDeleteTask && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteTask(task);
-                            }}
-                            className="p-1 text-red-400 hover:text-red-300 hover:bg-red-600/20 rounded transition-colors"
-                            title="Delete Task"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

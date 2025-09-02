@@ -5,7 +5,7 @@ import ProjectCard from "./ProjectCard";
 import useAdminData from "../hooks/useAdminData";
 import DeleteProjectModal from "./DeleteProjectModal";
 import DeleteTaskModal from "./DeleteTaskModal";
-import EditTaskModal from "./EditTaskModal";
+import AddTaskModal from "./AddTaskModal";
 
 export default function ProjectsGrid() {
   const {
@@ -18,8 +18,7 @@ export default function ProjectsGrid() {
 
   const [deleteProjectModal, setDeleteProjectModal] = useState<{ isOpen: boolean; project: any | null }>({ isOpen: false, project: null });
   const [deleteTaskModal, setDeleteTaskModal] = useState<{ isOpen: boolean; task: any | null }>({ isOpen: false, task: null });
-  const [editTaskModal, setEditTaskModal] = useState<{ isOpen: boolean; task: any | null; projectId: number | null }>({ isOpen: false, task: null, projectId: null });
-  const [projectTasks, setProjectTasks] = useState<{ [key: number]: any[] }>({});
+  const [addTaskModal, setAddTaskModal] = useState<{ isOpen: boolean; project: any | null }>({ isOpen: false, project: null });
   const [message, setMessage] = useState<string | null>(null);
 
   // ---------------------
@@ -43,56 +42,26 @@ export default function ProjectsGrid() {
 
   const handleConfirmDeleteTask = async () => {
     if (deleteTaskModal.task) {
-      try {
-        const response = await fetch(`/api/tasks?id=${deleteTaskModal.task.id}`, {
-          method: 'DELETE',
-          credentials: 'include',
-        });
-        
-        if (response.ok) {
-          setMessage(`🗑️ Task deleted: ${deleteTaskModal.task.title}`);
-          // Refresh the project tasks after deletion
-          const projectId = deleteTaskModal.task.projectId;
-          if (projectId) {
-            fetchProjectTasks(projectId);
-          }
-        } else {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData?.error || 'Failed to delete task');
-        }
-      } catch (error) {
-        console.error('Error deleting task:', error);
-        setMessage(`❌ Error deleting task: ${error.message}`);
+      // Add task deletion logic here
+      const response = await fetch(`/api/tasks/${deleteTaskModal.task.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        setMessage(`🗑️ Task deleted: ${deleteTaskModal.task.title}`);
       }
       setDeleteTaskModal({ isOpen: false, task: null });
     }
   };
 
-  const handleOpenEditTask = (task: any, projectId: number) => {
-    setEditTaskModal({ isOpen: true, task, projectId });
+  const handleOpenAddTask = (project: any) => {
+    setAddTaskModal({ isOpen: true, project });
   };
 
-  const handleTaskUpdated = () => {
-    setMessage(`✏️ Task updated successfully`);
-    setEditTaskModal({ isOpen: false, task: null, projectId: null });
-    // Refresh project tasks
-    if (editTaskModal.projectId) {
-      fetchProjectTasks(editTaskModal.projectId);
-    }
-  };
-
-  const fetchProjectTasks = async (projectId: number) => {
-    try {
-      const response = await fetch(`/api/tasks?projectId=${projectId}`, {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setProjectTasks(prev => ({ ...prev, [projectId]: data.tasks || [] }));
-      }
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-    }
+  const handleTaskAdded = () => {
+    setMessage(`➕ Task added successfully`);
+    setAddTaskModal({ isOpen: false, project: null });
   };
 
   return (
@@ -125,10 +94,7 @@ export default function ProjectsGrid() {
               project={project}
               index={idx}
               onOpenProject={() => handleOpenDeleteProject(project)}
-              onEditTask={(task) => handleOpenEditTask(task, project.id)}
-              onDeleteTask={handleOpenDeleteTask}
-              tasks={projectTasks[project.id] || []}
-              onLoadTasks={() => fetchProjectTasks(project.id)}
+              onAddTask={() => handleOpenAddTask(project)}
             />
           ))
         )}
@@ -150,14 +116,13 @@ export default function ProjectsGrid() {
         taskTitle={deleteTaskModal.task?.title || ""}
       />
 
-      {/* Edit Task Modal */}
-      {editTaskModal.task && editTaskModal.projectId && (
-        <EditTaskModal
-          isOpen={editTaskModal.isOpen}
-          onClose={() => setEditTaskModal({ isOpen: false, task: null, projectId: null })}
-          onTaskUpdated={handleTaskUpdated}
-          task={editTaskModal.task}
-          projectId={editTaskModal.projectId}
+      {/* Add Task Modal */}
+      {addTaskModal.project && (
+        <AddTaskModal
+          project={addTaskModal.project}
+          isOpen={addTaskModal.isOpen}
+          onClose={() => setAddTaskModal({ isOpen: false, project: null })}
+          onTaskAdded={handleTaskAdded}
         />
       )}
     </div>

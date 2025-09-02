@@ -1,22 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Plus, User, Calendar, Clock, Flag, CheckCircle } from "lucide-react";
+import { X, Edit3, User, Calendar, Clock, Flag, CheckCircle } from "lucide-react";
 import useAdminData from "../hooks/useAdminData";
 
-interface AddTaskModalProps {
+interface EditTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onTaskCreated: () => void;
+  onTaskUpdated: () => void;
+  task: any;
   projectId: number;
 }
 
-export default function AddTaskModal({
+export default function EditTaskModal({
   isOpen,
   onClose,
-  onTaskCreated,
+  onTaskUpdated,
+  task,
   projectId,
-}: AddTaskModalProps) {
+}: EditTaskModalProps) {
   const { users } = useAdminData();
   const [formData, setFormData] = useState({
     title: "",
@@ -30,21 +32,21 @@ export default function AddTaskModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Reset form when modal opens
+  // Initialize form data when task changes
   useEffect(() => {
-    if (isOpen) {
+    if (task && isOpen) {
       setFormData({
-        title: "",
-        description: "",
-        priority: "medium",
-        status: "todo",
-        assignedToId: "",
-        dueDate: "",
-        estimatedHours: "",
+        title: task.title || "",
+        description: task.description || "",
+        priority: task.priority || "medium",
+        status: task.status || "todo",
+        assignedToId: task.assignedToId ? task.assignedToId.toString() : "",
+        dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "",
+        estimatedHours: task.estimatedHours ? task.estimatedHours.toString() : "",
       });
       setError(null);
     }
-  }, [isOpen]);
+  }, [task, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,36 +54,50 @@ export default function AddTaskModal({
     setError(null);
 
     try {
-      const taskData = {
+      const taskData: any = {
         title: formData.title,
-        description: formData.description || null,
+        description: formData.description,
         priority: formData.priority,
         status: formData.status,
-        assignedToId: formData.assignedToId ? parseInt(formData.assignedToId) : null,
-        dueDate: formData.dueDate || null,
-        estimatedHours: formData.estimatedHours ? parseFloat(formData.estimatedHours) : null,
-        projectId: projectId,
       };
 
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
+      if (formData.assignedToId) {
+        taskData.assignedToId = parseInt(formData.assignedToId);
+      } else {
+        taskData.assignedToId = null;
+      }
+
+      if (formData.dueDate) {
+        taskData.dueDate = formData.dueDate;
+      } else {
+        taskData.dueDate = null;
+      }
+
+      if (formData.estimatedHours) {
+        taskData.estimatedHours = parseFloat(formData.estimatedHours);
+      } else {
+        taskData.estimatedHours = null;
+      }
+
+      const response = await fetch(`/api/tasks`, {
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
-        body: JSON.stringify(taskData),
+        credentials: "include",
+        body: JSON.stringify({ ...taskData, id: task.id }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData?.error || 'Failed to create task');
+        throw new Error(errorData?.error || "Failed to update task");
       }
 
-      onTaskCreated();
+      onTaskUpdated();
       onClose();
     } catch (error: any) {
-      console.error("Error creating task:", error);
-      setError(error.message || "Failed to create task");
+      console.error("Error updating task:", error);
+      setError(error.message || "Failed to update task");
     } finally {
       setLoading(false);
     }
@@ -101,15 +117,15 @@ export default function AddTaskModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with Gradient */}
-        <div className="relative bg-gradient-to-r from-green-600/20 to-blue-600/20 border-b border-white/10">
+        <div className="relative bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-b border-white/10">
           <div className="flex items-center justify-between p-6">
             <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500/30 to-blue-500/30 border border-green-400/30 flex items-center justify-center backdrop-blur-sm">
-                <Plus className="h-6 w-6 text-green-300" />
+              <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/30 to-purple-500/30 border border-blue-400/30 flex items-center justify-center backdrop-blur-sm">
+                <Edit3 className="h-6 w-6 text-blue-300" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Add New Task</h2>
-                <p className="text-sm text-gray-300 mt-1">Create a new task for this project</p>
+                <h2 className="text-2xl font-bold text-white">Edit Task</h2>
+                <p className="text-sm text-gray-300 mt-1">Update task details and settings</p>
               </div>
             </div>
             <button
@@ -121,13 +137,13 @@ export default function AddTaskModal({
             </button>
           </div>
           {/* Decorative gradient line */}
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-green-400/50 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"></div>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-red-400 text-sm flex items-center gap-2">
+            <div className="bg-red-600/10 border border-red-500/20 rounded-xl p-4 text-red-300 text-sm flex items-center gap-2">
               <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
@@ -135,7 +151,7 @@ export default function AddTaskModal({
             </div>
           )}
 
-          {/* Title */}
+          {/* Task Title */}
           <div>
             <label className="block text-base font-medium text-gray-200 mb-3">
               Task Title *
@@ -144,7 +160,7 @@ export default function AddTaskModal({
               type="text"
               value={formData.title}
               onChange={(e) => handleInputChange("title", e.target.value)}
-              className="w-full px-4 py-3 bg-gray-800/50 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
+              className="w-full px-4 py-3 bg-gray-800/50 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
               placeholder="Enter a descriptive task title"
               required
             />
@@ -158,13 +174,13 @@ export default function AddTaskModal({
             <textarea
               value={formData.description}
               onChange={(e) => handleInputChange("description", e.target.value)}
-              className="w-full px-4 py-3 bg-gray-800/50 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none text-base"
+              className="w-full px-4 py-3 bg-gray-800/50 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none text-base"
               placeholder="Provide additional details about this task..."
               rows={4}
             />
           </div>
 
-          {/* Priority and Assignee Row */}
+          {/* Priority and Status Row */}
           <div className="grid grid-cols-2 gap-4">
             {/* Priority */}
             <div>
@@ -174,7 +190,7 @@ export default function AddTaskModal({
               <select
                 value={formData.priority}
                 onChange={(e) => handleInputChange("priority", e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800/50 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none cursor-pointer text-base"
+                className="w-full px-4 py-3 bg-gray-800/50 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none cursor-pointer text-base"
               >
                 <option value="low">🟢 Low</option>
                 <option value="medium">🟡 Medium</option>
@@ -183,24 +199,41 @@ export default function AddTaskModal({
               </select>
             </div>
 
-            {/* Assignee */}
+            {/* Status */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Assignee
+                Status
               </label>
               <select
-                value={formData.assignedToId}
-                onChange={(e) => handleInputChange("assignedToId", e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none cursor-pointer"
+                value={formData.status}
+                onChange={(e) => handleInputChange("status", e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800/50 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none cursor-pointer text-base"
               >
-                <option value="">👤 Unassigned</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    👨‍💼 {user.name}
-                  </option>
-                ))}
+                <option value="todo">📋 To Do</option>
+                <option value="in_progress">⚡ In Progress</option>
+                <option value="completed">✅ Completed</option>
+                <option value="cancelled">❌ Cancelled</option>
               </select>
             </div>
+          </div>
+
+          {/* Assignee */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Assignee
+            </label>
+            <select
+              value={formData.assignedToId}
+              onChange={(e) => handleInputChange("assignedToId", e.target.value)}
+              className="w-full px-4 py-3 bg-gray-800/50 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none cursor-pointer text-base"
+            >
+              <option value="">👤 Unassigned</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  👨‍💼 {user.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Due Date and Estimated Hours Row */}
@@ -214,7 +247,7 @@ export default function AddTaskModal({
                 type="date"
                 value={formData.dueDate}
                 onChange={(e) => handleInputChange("dueDate", e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800/50 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
+                className="w-full px-4 py-3 bg-gray-800/50 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
               />
             </div>
 
@@ -230,7 +263,7 @@ export default function AddTaskModal({
                 max="999"
                 value={formData.estimatedHours}
                 onChange={(e) => handleInputChange("estimatedHours", e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800/50 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
+                className="w-full px-4 py-3 bg-gray-800/50 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
                 placeholder="e.g., 2.5"
               />
             </div>
@@ -242,26 +275,27 @@ export default function AddTaskModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-6 py-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 rounded-xl bg-gray-600/20 hover:bg-gray-600/30 border border-gray-500/30 text-gray-300 hover:text-gray-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !formData.title.trim()}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 flex items-center gap-2 font-medium shadow-lg hover:shadow-blue-500/25"
+              className="px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white transition-all duration-200 flex items-center gap-2 font-medium shadow-lg hover:shadow-blue-500/25"
             >
               {loading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Creating Task...
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Updating Task...
                 </>
               ) : (
                 <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Create Task
+                  <Edit3 className="w-4 h-4" />
+                  Update Task
                 </>
               )}
             </button>

@@ -43,26 +43,14 @@ export default function ProjectsGrid() {
 
   const handleConfirmDeleteTask = async () => {
     if (deleteTaskModal.task) {
-      try {
-        const response = await fetch(`/api/tasks?id=${deleteTaskModal.task.id}`, {
-          method: 'DELETE',
-          credentials: 'include',
-        });
-        
-        if (response.ok) {
-          setMessage(`🗑️ Task deleted: ${deleteTaskModal.task.title}`);
-          // Refresh the project tasks after deletion
-          const projectId = deleteTaskModal.task.projectId;
-          if (projectId) {
-            fetchProjectTasks(projectId);
-          }
-        } else {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData?.error || 'Failed to delete task');
-        }
-      } catch (error) {
-        console.error('Error deleting task:', error);
-        setMessage(`❌ Error deleting task: ${error.message}`);
+      // Add task deletion logic here
+      const response = await fetch(`/api/tasks/${deleteTaskModal.task.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        setMessage(`🗑️ Task deleted: ${deleteTaskModal.task.title}`);
       }
       setDeleteTaskModal({ isOpen: false, task: null });
     }
@@ -125,10 +113,7 @@ export default function ProjectsGrid() {
               project={project}
               index={idx}
               onOpenProject={() => handleOpenDeleteProject(project)}
-              onEditTask={(task) => handleOpenEditTask(task, project.id)}
-              onDeleteTask={handleOpenDeleteTask}
-              tasks={projectTasks[project.id] || []}
-              onLoadTasks={() => fetchProjectTasks(project.id)}
+              onAddTask={() => handleOpenAddTask(project)}
             />
           ))
         )}
@@ -150,14 +135,13 @@ export default function ProjectsGrid() {
         taskTitle={deleteTaskModal.task?.title || ""}
       />
 
-      {/* Edit Task Modal */}
-      {editTaskModal.task && editTaskModal.projectId && (
-        <EditTaskModal
-          isOpen={editTaskModal.isOpen}
-          onClose={() => setEditTaskModal({ isOpen: false, task: null, projectId: null })}
-          onTaskUpdated={handleTaskUpdated}
-          task={editTaskModal.task}
-          projectId={editTaskModal.projectId}
+      {/* Add Task Modal */}
+      {addTaskModal.project && (
+        <AddTaskModal
+          project={addTaskModal.project}
+          isOpen={addTaskModal.isOpen}
+          onClose={() => setAddTaskModal({ isOpen: false, project: null })}
+          onTaskAdded={handleTaskAdded}
         />
       )}
     </div>
