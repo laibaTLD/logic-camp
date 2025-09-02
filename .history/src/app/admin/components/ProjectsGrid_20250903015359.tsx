@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import ProjectCard from "./ProjectCard";
 import useAdminData from "../hooks/useAdminData";
 import DeleteProjectModal from "./DeleteProjectModal";
 import DeleteTaskModal from "./DeleteTaskModal";
-// Removed modal imports - now using separate pages
+import EditTaskModal from "./EditTaskModal";
+import AddTaskModal from "./AddTaskModal";
 
 export default function ProjectsGrid() {
-  const router = useRouter();
   const {
     projects,
     loadingProjects,
@@ -20,7 +19,8 @@ export default function ProjectsGrid() {
 
   const [deleteProjectModal, setDeleteProjectModal] = useState<{ isOpen: boolean; project: any | null }>({ isOpen: false, project: null });
   const [deleteTaskModal, setDeleteTaskModal] = useState<{ isOpen: boolean; task: any | null }>({ isOpen: false, task: null });
-  // Removed modal state - now using navigation to separate pages
+  const [editTaskModal, setEditTaskModal] = useState<{ isOpen: boolean; task: any | null; projectId: number | null }>({ isOpen: false, task: null, projectId: null });
+  const [addTaskModal, setAddTaskModal] = useState<{ isOpen: boolean; projectId: number | null }>({ isOpen: false, projectId: null });
   const [projectTasks, setProjectTasks] = useState<{ [key: number]: any[] }>({});
   const [message, setMessage] = useState<string | null>(null);
 
@@ -71,11 +71,29 @@ export default function ProjectsGrid() {
   };
 
   const handleOpenEditTask = (task: any, projectId: number) => {
-    router.push(`/admin/edit-task?taskId=${task.id}&projectId=${projectId}`);
+    setEditTaskModal({ isOpen: true, task, projectId });
+  };
+
+  const handleTaskUpdated = () => {
+    setMessage(`✏️ Task updated successfully`);
+    setEditTaskModal({ isOpen: false, task: null, projectId: null });
+    // Refresh project tasks
+    if (editTaskModal.projectId) {
+      fetchProjectTasks(editTaskModal.projectId);
+    }
   };
 
   const handleOpenAddTask = (projectId: number) => {
-    router.push(`/admin/add-task?projectId=${projectId}`);
+    setAddTaskModal({ isOpen: true, projectId });
+  };
+
+  const handleTaskCreated = () => {
+    setMessage(`✅ Task created successfully`);
+    setAddTaskModal({ isOpen: false, projectId: null });
+    // Refresh project tasks
+    if (addTaskModal.projectId) {
+      fetchProjectTasks(addTaskModal.projectId);
+    }
   };
 
   const fetchProjectTasks = async (projectId: number) => {
@@ -148,7 +166,26 @@ export default function ProjectsGrid() {
         taskTitle={deleteTaskModal.task?.title || ""}
       />
 
-      {/* Removed modals - now using separate pages */}
+      {/* Edit Task Modal */}
+      {editTaskModal.task && editTaskModal.projectId && (
+        <EditTaskModal
+          isOpen={editTaskModal.isOpen}
+          onClose={() => setEditTaskModal({ isOpen: false, task: null, projectId: null })}
+          onTaskUpdated={handleTaskUpdated}
+          task={editTaskModal.task}
+          projectId={editTaskModal.projectId}
+        />
+      )}
+
+      {/* Add Task Modal */}
+      {addTaskModal.projectId && (
+        <AddTaskModal
+          isOpen={addTaskModal.isOpen}
+          onClose={() => setAddTaskModal({ isOpen: false, projectId: null })}
+          onTaskCreated={handleTaskCreated}
+          projectId={addTaskModal.projectId}
+        />
+      )}
     </div>
   );
 }

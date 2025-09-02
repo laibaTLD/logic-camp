@@ -9,7 +9,6 @@ import DeleteTaskModal from "./DeleteTaskModal";
 // Removed modal imports - now using separate pages
 
 export default function ProjectsGrid() {
-  const router = useRouter();
   const {
     projects,
     loadingProjects,

@@ -100,24 +100,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index, onOpenProject
             {showTasks ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             {showTasks ? 'Hide Tasks' : `Tasks (${tasks.length})`}
           </button>
-          {onAddTask && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddTask();
-              }}
-              className="px-3 py-2 text-xs bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 border border-green-500/30 text-green-300 hover:text-green-200 rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-1 shadow-sm hover:shadow-green-500/20"
-            >
-              <Plus className="h-3 w-3" />
-              Add Task
-            </button>
-          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
               onOpenProject(project);
             }}
-            className="px-3 py-2 text-xs bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-300 hover:text-red-200 rounded-lg transition-all duration-200 font-medium"
+            className="flex-1 px-3 py-2 text-xs bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-300 hover:text-red-200 rounded-lg transition-all duration-200 font-medium"
           >
             Delete
           </button>

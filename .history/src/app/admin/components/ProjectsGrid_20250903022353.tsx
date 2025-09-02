@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import ProjectCard from "./ProjectCard";
 import useAdminData from "../hooks/useAdminData";
 import DeleteProjectModal from "./DeleteProjectModal";
@@ -9,7 +8,6 @@ import DeleteTaskModal from "./DeleteTaskModal";
 // Removed modal imports - now using separate pages
 
 export default function ProjectsGrid() {
-  const router = useRouter();
   const {
     projects,
     loadingProjects,

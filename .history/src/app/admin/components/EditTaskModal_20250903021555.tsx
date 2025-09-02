@@ -113,7 +113,7 @@ export default function EditTaskModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-2xl p-4 animate-fadeIn" onClick={onClose}>
       {/* Modal */}
       <div 
-        className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 border border-white/20 backdrop-blur-2xl rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative animate-scaleIn text-gray-100"
+        className="bg-gradient-to-br from-gray-900/95 to-gray-800/95 border border-white/20 backdrop-blur-2xl rounded-3xl w-full max-w-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)] relative animate-scaleIn text-gray-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header with Gradient */}
@@ -141,8 +141,8 @@ export default function EditTaskModal({
         </div>
 
         {/* Form */}
-        <div className="max-h-[calc(90vh-120px)] overflow-y-auto">
-          <form onSubmit={handleSubmit} className="p-8 space-y-8">
+        <div>
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {error && (
               <div className="bg-gradient-to-r from-red-600/15 to-red-500/10 border border-red-500/30 rounded-2xl p-5 text-red-300 text-sm flex items-center gap-3 backdrop-blur-sm">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
@@ -158,7 +158,7 @@ export default function EditTaskModal({
             )}
 
             {/* Task Title */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <label className="flex items-center gap-2 text-base font-semibold text-white">
                 <Edit3 className="w-4 h-4 text-blue-400" />
                 Task Title *
@@ -168,7 +168,7 @@ export default function EditTaskModal({
                   type="text"
                   value={formData.title}
                   onChange={(e) => handleInputChange("title", e.target.value)}
-                  className="w-full px-5 py-4 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 text-base backdrop-blur-sm hover:border-white/30"
+                  className="w-full px-4 py-3 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 text-sm backdrop-blur-sm hover:border-white/30"
                   placeholder="Enter a descriptive task title"
                   required
                 />
@@ -177,7 +177,7 @@ export default function EditTaskModal({
             </div>
 
             {/* Description */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <label className="flex items-center gap-2 text-base font-semibold text-white">
                 <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -188,18 +188,18 @@ export default function EditTaskModal({
                 <textarea
                   value={formData.description}
                   onChange={(e) => handleInputChange("description", e.target.value)}
-                  className="w-full px-5 py-4 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 resize-none text-base backdrop-blur-sm hover:border-white/30"
+                  className="w-full px-4 py-3 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 resize-none text-sm backdrop-blur-sm hover:border-white/30"
                   placeholder="Provide additional details about this task..."
-                  rows={4}
+                  rows={3}
                 />
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-500/5 to-blue-500/5 pointer-events-none"></div>
               </div>
             </div>
 
             {/* Priority and Status Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Priority */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <label className="flex items-center gap-2 text-base font-semibold text-white">
                   <Flag className="w-4 h-4 text-orange-400" />
                   Priority
@@ -208,7 +208,7 @@ export default function EditTaskModal({
                   <select
                     value={formData.priority}
                     onChange={(e) => handleInputChange("priority", e.target.value)}
-                    className="w-full px-5 py-4 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 text-base backdrop-blur-sm hover:border-white/30 appearance-none cursor-pointer"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 text-sm backdrop-blur-sm hover:border-white/30 appearance-none cursor-pointer"
                   >
                     <option value="low" className="bg-gray-800 text-white">🟢 Low Priority</option>
                     <option value="medium" className="bg-gray-800 text-white">🟡 Medium Priority</option>
@@ -225,7 +225,7 @@ export default function EditTaskModal({
               </div>
 
               {/* Status */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <label className="flex items-center gap-2 text-base font-semibold text-white">
                   <CheckCircle className="w-4 h-4 text-purple-400" />
                   Status
@@ -234,7 +234,7 @@ export default function EditTaskModal({
                   <select
                     value={formData.status}
                     onChange={(e) => handleInputChange("status", e.target.value)}
-                    className="w-full px-5 py-4 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 text-base backdrop-blur-sm hover:border-white/30 appearance-none cursor-pointer"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 text-sm backdrop-blur-sm hover:border-white/30 appearance-none cursor-pointer"
                   >
                     <option value="todo" className="bg-gray-800 text-white">📋 To Do</option>
                     <option value="in_progress" className="bg-gray-800 text-white">⚡ In Progress</option>
@@ -252,7 +252,7 @@ export default function EditTaskModal({
             </div>
 
             {/* Assignee */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <label className="flex items-center gap-2 text-base font-semibold text-white">
                 <User className="w-4 h-4 text-cyan-400" />
                 Assign To
@@ -261,7 +261,7 @@ export default function EditTaskModal({
                 <select
                   value={formData.assignedToId}
                   onChange={(e) => handleInputChange("assignedToId", e.target.value)}
-                  className="w-full px-5 py-4 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 text-base backdrop-blur-sm hover:border-white/30 appearance-none cursor-pointer"
+                  className="w-full px-4 py-3 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 text-sm backdrop-blur-sm hover:border-white/30 appearance-none cursor-pointer"
                 >
                   <option value="" className="bg-gray-800 text-white">👤 Unassigned</option>
                   {users.map((user) => (
@@ -280,9 +280,9 @@ export default function EditTaskModal({
             </div>
 
             {/* Due Date and Estimated Hours Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Due Date */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <label className="flex items-center gap-2 text-base font-semibold text-white">
                   <Calendar className="w-4 h-4 text-pink-400" />
                   Due Date
@@ -292,14 +292,14 @@ export default function EditTaskModal({
                     type="date"
                     value={formData.dueDate}
                     onChange={(e) => handleInputChange("dueDate", e.target.value)}
-                    className="w-full px-5 py-4 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 text-base backdrop-blur-sm hover:border-white/30"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 text-sm backdrop-blur-sm hover:border-white/30"
                   />
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-pink-500/5 to-purple-500/5 pointer-events-none"></div>
                 </div>
               </div>
 
               {/* Estimated Hours */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <label className="flex items-center gap-2 text-base font-semibold text-white">
                   <Clock className="w-4 h-4 text-yellow-400" />
                   Estimated Hours
@@ -312,7 +312,7 @@ export default function EditTaskModal({
                     max="999"
                     value={formData.estimatedHours}
                     onChange={(e) => handleInputChange("estimatedHours", e.target.value)}
-                    className="w-full px-5 py-4 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 text-base backdrop-blur-sm hover:border-white/30"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-gray-800/60 to-gray-700/60 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400/50 transition-all duration-300 text-sm backdrop-blur-sm hover:border-white/30"
                     placeholder="e.g., 2.5"
                   />
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-yellow-500/5 to-orange-500/5 pointer-events-none"></div>
@@ -321,19 +321,19 @@ export default function EditTaskModal({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-4 pt-8 border-t border-white/10">
+            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="px-8 py-4 bg-gradient-to-r from-gray-700/80 to-gray-600/80 hover:from-gray-600/90 hover:to-gray-500/90 disabled:opacity-50 text-white rounded-2xl transition-all duration-300 font-semibold text-base backdrop-blur-sm border border-white/10 hover:border-white/20 transform hover:scale-105 active:scale-95 disabled:transform-none"
+                className="px-6 py-3 bg-gradient-to-r from-gray-700/80 to-gray-600/80 hover:from-gray-600/90 hover:to-gray-500/90 disabled:opacity-50 text-white rounded-xl transition-all duration-300 font-medium text-sm backdrop-blur-sm border border-white/10 hover:border-white/20 transform hover:scale-105 active:scale-95 disabled:transform-none"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading || !formData.title.trim()}
-                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded-2xl transition-all duration-300 font-semibold text-base backdrop-blur-sm border border-blue-500/30 hover:border-blue-400/50 disabled:border-gray-500/30 transform hover:scale-105 active:scale-95 disabled:transform-none shadow-lg shadow-blue-500/25 hover:shadow-blue-400/30 flex items-center gap-3"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-300 font-medium text-sm backdrop-blur-sm border border-blue-500/30 hover:border-blue-400/50 disabled:border-gray-500/30 transform hover:scale-105 active:scale-95 disabled:transform-none shadow-lg shadow-blue-500/25 hover:shadow-blue-400/30 flex items-center gap-2"
               >
                 {loading ? (
                   <>
