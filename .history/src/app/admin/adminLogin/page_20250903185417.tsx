@@ -2,52 +2,32 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
-export default function Login() {
+export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { adminLogin, isAuthenticated, loading, error: authError, user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // Clear any existing tokens when login page loads
+    // Clear any existing tokens when admin login page loads
     localStorage.removeItem("authToken");
     localStorage.removeItem("adminToken");
     localStorage.removeItem("user");
-  }, []);
+    
+    if (isAuthenticated && user?.role === 'admin') {
+      router.push("/admin");
+    }
+  }, [isAuthenticated, user, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include',
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      // Store auth token in localStorage
-      if (data.token) {
-        localStorage.setItem('authToken', data.token);
-      }
-
-      router.push("/");
+      await adminLogin(email, password);
+      router.push("/admin");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
-      setLoading(false);
+      // Error is handled in hook
     }
   };
 
@@ -61,7 +41,7 @@ export default function Login() {
       <div className="relative w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-[0_12px_40px_rgba(0,0,0,0.35)] z-10">
         <h1 className="text-2xl md:text-3xl font-bold text-white text-center mb-6 tracking-wide">
           <span className="text-indigo-400">Logic</span>
-          <span className="text-purple-400">Camp</span> Login
+          <span className="text-purple-400">Camp</span> Admin
         </h1>
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
@@ -72,7 +52,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="user@example.com"
+              placeholder="admin@example.com"
               className="rounded-xl bg-white/5 border border-white/10 px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
             />
           </div>
@@ -89,14 +69,14 @@ export default function Login() {
             />
           </div>
 
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          {authError && <p className="text-red-500 text-sm text-center">{authError}</p>}
+          {loading && <p className="text-gray-300 text-sm text-center">Loading...</p>}
 
           <button
             type="submit"
-            disabled={loading}
-            className="mt-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-white font-semibold shadow-md hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="mt-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-white font-semibold shadow-md hover:shadow-lg hover:scale-[1.02] transition-all"
           >
-            {loading ? 'Logging in...' : 'Login'}
+            Login
           </button>
         </form>
       </div>

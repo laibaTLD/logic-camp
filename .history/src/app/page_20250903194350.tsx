@@ -15,6 +15,6 @@ export default function Home() {
     password: '',
     role: 'employee',
     isActive: true,
-    isApproved: true
+    isApproved: false
   }} />;
 }

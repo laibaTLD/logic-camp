@@ -460,10 +460,6 @@ export default function useAdminData() {
     loadingProjects,
     teams,
     loadingTeams,
-    teamsPage,
-    teamsPerPage,
-    totalTeams,
-    totalTeamsPages,
 
     // user actions
     approveUser,
@@ -474,7 +470,6 @@ export default function useAdminData() {
     // team actions
     createTeam,
     editTeam,
-    fetchTeams,
 
     // project actions
     openProject,

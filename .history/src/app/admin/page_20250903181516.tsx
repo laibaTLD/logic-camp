@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import NewTeamModal from "./components/NewTeamModal";
 import UserTable from "./components/UserTable";
@@ -12,52 +12,6 @@ import { Plus } from "lucide-react";
 export default function AdminDashboard() {
   const router = useRouter();
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    const verifyAdminAuth = async () => {
-      try {
-        // Check for admin token in localStorage
-        const adminToken = localStorage.getItem('adminToken');
-        if (!adminToken) {
-          router.push('/admin/adminLogin');
-          return;
-        }
-
-        // Verify token with API
-        const verifyResponse = await fetch('/api/auth/verify', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${adminToken}`,
-          },
-        });
-
-        if (!verifyResponse.ok) {
-          // Token is invalid, clear localStorage and redirect
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('user');
-          router.push('/admin/adminLogin');
-          return;
-        }
-
-        const verifyData = await verifyResponse.json();
-        // Check if token is valid
-        if (!verifyData.valid) {
-          localStorage.removeItem('adminToken');
-          localStorage.removeItem('user');
-          router.push('/admin/adminLogin');
-          return;
-        }
-
-        setIsAuthenticated(true);
-      } catch (err) {
-        console.error('Auth verification failed:', err);
-        router.push('/admin/adminLogin');
-      }
-    };
-
-    verifyAdminAuth();
-  }, [router]);
 
   const {
     users,
@@ -79,14 +33,6 @@ export default function AdminDashboard() {
     createProject,
     createTeam, // ✅ make sure this exists in your hook
   } = useAdminData();
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0b0b10] text-white">
-        <div className="text-lg">Verifying authentication...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative min-h-screen bg-[#0b0b10] text-white overflow-hidden">

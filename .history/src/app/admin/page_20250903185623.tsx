@@ -26,10 +26,11 @@ export default function AdminDashboard() {
 
         // Verify token with API
         const verifyResponse = await fetch('/api/auth/verify', {
-          method: 'GET',
+          method: 'POST',
           headers: {
-            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ token: adminToken }),
         });
 
         if (!verifyResponse.ok) {
@@ -41,8 +42,8 @@ export default function AdminDashboard() {
         }
 
         const verifyData = await verifyResponse.json();
-        // Check if token is valid
-        if (!verifyData.valid) {
+        // Check if user has admin role
+        if (verifyData.user?.role !== 'admin') {
           localStorage.removeItem('adminToken');
           localStorage.removeItem('user');
           router.push('/admin/adminLogin');

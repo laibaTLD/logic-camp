@@ -53,13 +53,7 @@ export function useUser() {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          if (response.status === 403) {
-            // Account pending approval - don't redirect to login
-            setError(errorData.error || 'Account pending approval');
-            return;
-          }
-          throw new Error(errorData.error || 'Failed to fetch user data');
+          throw new Error('Failed to fetch user data');
         }
 
         const data = await response.json();
@@ -67,8 +61,6 @@ export function useUser() {
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred');
         // On error, redirect to login
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
         router.push('/login');
       } finally {
         setLoading(false);

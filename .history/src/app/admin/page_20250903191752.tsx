@@ -41,8 +41,8 @@ export default function AdminDashboard() {
         }
 
         const verifyData = await verifyResponse.json();
-        // Check if token is valid
-        if (!verifyData.valid) {
+        // Check if user has admin role
+        if (verifyData.user?.role !== 'admin') {
           localStorage.removeItem('adminToken');
           localStorage.removeItem('user');
           router.push('/admin/adminLogin');
