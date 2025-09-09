@@ -6,9 +6,10 @@ export interface UserAttributes {
   name: string;
   email: string;
   password: string;
-  role: "admin" | "employee" | "teamLead";
-  isActive: boolean;
-  isApproved: boolean;
+  role: "admin" | "team_lead" | "employee";
+  is_active: boolean;
+  is_approved: boolean;
+  notifications?: object | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -26,9 +27,10 @@ class User extends Model<UserAttributes, UserCreationAttributes>
   declare name: string;
   declare email: string;
   declare password: string;
-  declare role: "admin" | "employee" | "teamLead";
-  declare isActive: boolean;
-  declare isApproved: boolean;
+  declare role: "admin" | "team_lead" | "employee";
+  declare is_active: boolean;
+  declare is_approved: boolean;
+  declare notifications?: object | null;
 
   // timestamps
    declare readonly createdAt: Date;
@@ -66,30 +68,34 @@ export const initUser = (sequelize: Sequelize) => {
         allowNull: false,
       },
       role: {
-        type: DataTypes.ENUM("admin", "employee", "teamLead"),
+        type: DataTypes.ENUM("admin", "team_lead", "employee"),
         allowNull: false,
         defaultValue: "employee",
       },
-      isActive: {
+      is_active: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
       },
-      isApproved: {
+      is_approved: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+      },
+      notifications: {
+        type: DataTypes.JSON,
+        allowNull: true,
       },
     },
     {
       sequelize,
       tableName: "users",
-      timestamps: true, // createdAt & updatedAt handled automatically
+      timestamps: true,
+      underscored: true, // use created_at / updated_at
       indexes: [
         { fields: ["email"], unique: true },
         { fields: ["role"] },
-        { fields: ["isActive"] },
-        { fields: ["isApproved"] },
+        { fields: ["is_approved"] },
       ],
     }
   );

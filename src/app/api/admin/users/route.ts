@@ -1,5 +1,5 @@
 // src/app/api/admin/users/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import { getModels } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
 
@@ -9,11 +9,11 @@ import { verifyToken } from "@/lib/auth";
 // Helper: Verify Admin
 // ----------------------
 async function checkAdmin(req: NextRequest) {
-  const payload = await verifyToken(req);
-  if (!payload) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  const authResult = await verifyToken(req);
+  if (!authResult.success || !authResult.user) {
+    return NextResponse.json({ success: false, error: authResult.error || "Unauthorized" }, { status: 401 });
   }
-  if (payload.role !== "admin") {
+  if (authResult.user.role !== "admin") {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
   return null;
@@ -28,9 +28,21 @@ export async function GET(req: NextRequest) {
 
   try {
     const models = await getModels();
-    const users = await models.User.findAll({
+    const rows = await models.User.findAll({
       order: [["id", "ASC"]],
-      attributes: ["id", "name", "email", "role", "isActive", "isApproved"],
+      attributes: ["id", "name", "email", "role", "is_active", "is_approved"],
+    });
+
+    const users = rows.map((u: any) => {
+      const j = u.toJSON();
+      return {
+        id: j.id,
+        name: j.name,
+        email: j.email,
+        role: j.role,
+        isActive: j.is_active,
+        isApproved: j.is_approved,
+      };
     });
 
     return NextResponse.json({ success: true, users }, { status: 200 });
@@ -70,13 +82,13 @@ export async function PUT(req: NextRequest) {
     }
 
     if (approve === true) {
-      await user.update({ isApproved: true });
+      await user.update({ is_approved: true });
       return NextResponse.json({ success: true, message: "User approved successfully" });
     } else if (approve === false) {
-      await user.update({ isApproved: false });
+      await user.update({ is_approved: false });
       return NextResponse.json({ success: true, message: "User rejected successfully" });
     } else {
-      await user.update({ name, email, role, isActive });
+      await user.update({ name, email, role, is_active: isActive });
       return NextResponse.json({
         success: true,
         message: "User updated successfully",

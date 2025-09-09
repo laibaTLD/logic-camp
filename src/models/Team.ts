@@ -4,8 +4,8 @@ export interface TeamAttributes {
   id: number;
   name: string;
   description?: string | null;
-  isActive: boolean;
-  createdById: number;
+  team_lead_id: number;
+  is_active: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -19,8 +19,8 @@ class Team extends Model<TeamAttributes, TeamCreationAttributes>
   declare id: number;
   declare name: string;
   declare description?: string | null;
-  declare isActive: boolean;
-  declare createdById: number;
+  declare team_lead_id: number;
+  declare is_active: boolean;
 
   // timestamps
   declare readonly createdAt: Date;
@@ -44,33 +44,37 @@ export const initTeam = (sequelize: Sequelize) => {
       name: {
         type: DataTypes.STRING(100),
         allowNull: false,
+        unique: true,
         validate: { len: [1, 100] },
       },
       description: {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      isActive: {
+      is_active: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true,
       },
-      createdById: {
+      team_lead_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: 'users',
           key: 'id',
         },
+        onDelete: 'SET NULL',
       },
     },
     {
       sequelize,
       tableName: 'teams',
-      timestamps: true, // Sequelize auto-generates createdAt & updatedAt
+      timestamps: true,
+      underscored: true,
       indexes: [
-        { fields: ['isActive'] },
-        { fields: ['createdById'] },
+        { fields: ['name'], unique: true },
+        { fields: ['is_active'] },
+        { fields: ['team_lead_id'] },
       ],
     }
   );

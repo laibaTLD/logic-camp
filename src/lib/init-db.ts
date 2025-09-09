@@ -1,42 +1,27 @@
 // src/lib/init-db.ts
-import { sequelize, testConnection, syncDatabase } from './database';
-import { initializeModels, setupAssociations } from '../models';
+import { sequelize } from './database';
+import { initializeModels } from '../models';
+import { setupAssociations } from '../models';
 
 export async function initializeDatabase(): Promise<boolean> {
   try {
-    console.log('🔄 Initializing database...');
-
-    // Test database connection first
-    console.log('🔌 Testing database connection...');
-    await testConnection();
-    console.log('✅ Database connection established');
-
-    // Initialize all models (this creates the model definitions and syncs tables)
-    console.log('📋 Initializing models...');
-    await initializeModels();
-    console.log('✅ Models initialized and tables synced');
-
-    // Setup associations between models
+    console.log('🔧 Initializing database models...');
+    // Initialize models
+    initializeModels(sequelize);
+    
     console.log('🔗 Setting up model associations...');
+    // Setup associations between models
     setupAssociations();
-    console.log('✅ Model associations configured');
-
-    // Sync database after associations are set
-    console.log('🗄️ Syncing database schema...');
-    await syncDatabase();
-    console.log('✅ Database schema synced');
-
-    console.log('🎉 Database initialized successfully!');
+    
+    console.log('📊 Syncing database schema...');
+    // Sync database (this creates tables if they don't exist)
+    await sequelize.sync({ alter: true });
+    
+    console.log('✅ Database initialized successfully');
     return true;
   } catch (error) {
-    console.error('❌ Failed to initialize database:', error);
-    
-    // Log more detailed error information
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    }
-    
+    console.error('❌ Error initializing database:', error);
+    console.error('Error details:', error instanceof Error ? error.message : String(error));
     throw error;
   }
 }
@@ -55,8 +40,8 @@ export async function testDatabaseOperations(): Promise<void> {
       email: 'test@example.com',
       password: 'hashedpassword123',
       role: 'employee',
-      isActive: true,
-      isApproved: true,
+      is_active: true,
+      is_approved: true,
     });
     
     console.log('✅ Test user created:', testUser.id);

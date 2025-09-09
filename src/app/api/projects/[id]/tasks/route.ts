@@ -8,12 +8,20 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { Task } = await getModels();
+    const { Task, Goal } = await getModels();
     const resolvedParams = await params;
     const projectId = Number(resolvedParams.id);
 
-    // ✅ Find all tasks for this project
-    const tasks = await Task.findAll({ where: { projectId } });
+    // ✅ Find all tasks for this project through its goals
+    // First, get all goals for this project
+    const goals = await Goal.findAll({ where: { project_id: projectId }, attributes: ['id'] });
+    const goalIds = goals.map(goal => goal.id);
+    
+    // Then find all tasks associated with these goals
+    const tasks = await Task.findAll({ 
+      where: { goal_id: goalIds.length > 0 ? goalIds : null },
+      include: [{ model: Goal, as: 'goal', attributes: ['id', 'title'] }]
+    });
 
     return NextResponse.json(tasks, { status: 200 });
   } catch (error) {
@@ -30,7 +38,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { Task, User, Project } = await getModels();
+    const { Task, User, Project, Goal } = await getModels();
     
     // Authenticate user
     const authResult = await authenticateUser(req);
@@ -47,6 +55,13 @@ export async function POST(
         { status: 400 }
       );
     }
+    
+    if (!body.goalId) {
+      return NextResponse.json(
+        { error: "Goal ID is required" },
+        { status: 400 }
+      );
+    }
 
     // Verify project exists
     const project = await Project.findByPk(projectId);
@@ -56,18 +71,41 @@ export async function POST(
         { status: 404 }
       );
     }
+    
+    // Verify goal exists and belongs to this project
+    const goal = await Goal.findOne({
+      where: { 
+        id: body.goalId,
+        project_id: projectId
+      }
+    });
+    
+    if (!goal) {
+      return NextResponse.json(
+        { error: "Goal not found or does not belong to this project" },
+        { status: 404 }
+      );
+    }
 
-    // Create task with proper associations
+    // Validate deadline within project range
+    if (body.dueDate) {
+      const due = new Date(body.dueDate);
+      if (project.start_date && due < new Date(project.start_date)) {
+        return NextResponse.json({ error: 'Task deadline is before project start_date' }, { status: 422 });
+      }
+      if (project.end_date && due > new Date(project.end_date)) {
+        return NextResponse.json({ error: 'Task deadline is after project end_date' }, { status: 422 });
+      }
+    }
+
+    // Create task with proper associations (schema-aligned)
     const newTask = await Task.create({
       title: body.title,
       description: body.description || "",
       status: body.status || "todo",
-      priority: body.priority || "medium",
-      projectId,
-      createdById: payload.userId,
-      assignedToId: body.assignedToId || null,
-      dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
-      estimatedHours: body.estimatedHours || null,
+      goal_id: body.goalId,
+      assigned_to_id: body.assignedToId || null,
+      deadline: body.dueDate ? new Date(body.dueDate) : undefined,
     });
 
     // Fetch created task with associations
@@ -75,7 +113,7 @@ export async function POST(
       include: [
         { model: User, as: "assignedTo", attributes: ["id", "name", "email"] },
         { model: User, as: "createdBy", attributes: ["id", "name", "email"] },
-        { model: Project, as: "project", attributes: ["id", "name", "status"] },
+        { model: Goal, as: "goal", attributes: ["id", "title", "status"] },
       ],
     });
 
@@ -94,7 +132,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { Task, User, Project } = await getModels();
+    const { Task, User, Goal } = await getModels();
     
     // Authenticate user
     const authResult = await authenticateUser(req);
@@ -112,9 +150,19 @@ export async function PATCH(
       );
     }
 
-    // Find task
+    // Get all goals for this project
+    const goals = await Goal.findAll({ 
+      where: { project_id: projectId },
+      attributes: ['id']
+    });
+    const goalIds = goals.map(goal => goal.id);
+    
+    // Find task that belongs to one of the project's goals
     const task = await Task.findOne({
-      where: { id: taskId, projectId }
+      where: { 
+        id: taskId, 
+        goal_id: goalIds.length > 0 ? goalIds : null 
+      }
     });
     
     if (!task) {
@@ -132,7 +180,7 @@ export async function PATCH(
       include: [
         { model: User, as: "assignedTo", attributes: ["id", "name", "email"] },
         { model: User, as: "createdBy", attributes: ["id", "name", "email"] },
-        { model: Project, as: "project", attributes: ["id", "name", "status"] },
+        { model: Goal, as: "goal", attributes: ["id", "title", "status"] },
       ],
     });
 

@@ -5,33 +5,25 @@ export interface TaskAttributes {
   id: number;
   title: string;
   description?: string;
-  status: 'todo' | 'in-progress' | 'review' | 'completed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  dueDate?: Date;
-  projectId: number;
-  assignedToId?: number;
-  createdById: number;
-  estimatedHours?: number;
-  actualHours?: number;
-  createdAt: Date;
-  updatedAt: Date;
+  status: 'todo' | 'inProgress' | 'testing' | 'completed';
+  deadline?: Date;
+  goal_id: number;
+  assigned_to_id: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-export interface TaskCreationAttributes extends Optional<TaskAttributes, 'id' | 'createdAt' | 'updatedAt' | 'description' | 'dueDate' | 'assignedToId' | 'estimatedHours' | 'actualHours'> {}
+export interface TaskCreationAttributes extends Optional<TaskAttributes, 'id' | 'createdAt' | 'updatedAt' | 'description' | 'deadline' | 'assigned_to_id'> {}
 
 class Task extends Model<TaskAttributes, TaskCreationAttributes> implements TaskAttributes {
   // Field declarations for TypeScript
   public id!: number;
   public title!: string;
   public description?: string;
-  public status!: 'todo' | 'in-progress' | 'review' | 'completed';
-  public priority!: 'low' | 'medium' | 'high' | 'urgent';
-  public dueDate?: Date;
-  public projectId!: number;
-  public assignedToId?: number;
-  public createdById!: number;
-  public estimatedHours?: number;
-  public actualHours?: number;
+  public status!: 'todo' | 'inProgress' | 'testing' | 'completed';
+  public deadline?: Date;
+  public goal_id!: number;
+  public assigned_to_id!: number;
 
   // Timestamps
   public readonly createdAt!: Date;
@@ -46,44 +38,34 @@ class Task extends Model<TaskAttributes, TaskCreationAttributes> implements Task
   // Instance methods for notification triggers
   async notifyTaskChanges(previousValues?: Partial<TaskAttributes>) {
     try {
-      // Check if task was assigned to someone new
-      if (this.assignedToId && (!previousValues || previousValues.assignedToId !== this.assignedToId)) {
-        // Get the models to fetch project and team information
-        const { getModels } = require('../lib/db');
-        const models = await getModels();
-        const { Project, Team, User, TeamMember } = models;
+      // Get the models to fetch assignees and project information
+      const { getModels } = require('../lib/db');
+      const models = await getModels();
+      const { Project } = models;
+      
+      // Check if there's an assignee
+      const assigneeId = this.assigned_to_id;
+      
+      // Check if task has an assignee
+      if (assigneeId) {
+        // Fetch the goal to get project information
+        const goal = await models.Goal.findByPk(this.goal_id);
+        if (!goal) return;
         
         // Fetch the project with team and members
-        const project = await Project.findByPk(this.projectId, {
-          include: [{
-            model: Team,
-            as: 'team',
-            include: [{
-              model: User,
-              as: 'members',
-              through: {
-                model: TeamMember,
-                attributes: ['role', 'joinedAt', 'isActive'],
-                where: { isActive: true }
-              },
-              attributes: ['id', 'name', 'email']
-            }]
-          }]
-        });
+        const project = await Project.findByPk(goal.project_id);
         
-        if (project && project.team && project.team.members) {
-          const teamMemberIds = project.team.members.map((member: any) => member.id);
-          await notifyTaskAssignedToTeam(teamMemberIds, this.assignedToId, this.title, project.name, this.id);
-        } else {
-          // Fallback to single user notification if team info not available
-          await notifyTaskAssigned(this.assignedToId, this.title, 'Project', this.id);
+        if (project && project.team) {
+          // Notify the assignee
+          await notifyTaskAssigned(assigneeId, this.title, project.name, this.id);
         }
       }
       
       // Check if task was completed
       if (this.status === 'completed' && previousValues && previousValues.status !== 'completed') {
-        const userIds = this.assignedToId ? [this.createdById, this.assignedToId] : [this.createdById];
-        await notifyTaskCompleted(userIds, this.title, 'Project', this.id);
+        if (assigneeId) {
+          await notifyTaskCompleted([assigneeId], this.title, 'Project', this.id);
+        }
       }
     } catch (error) {
       console.error(`Failed to send notification for task ${this.id}:`, error);
@@ -95,7 +77,7 @@ export const initTask = (sequelize: Sequelize) => {
   Task.init(
     {
       id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.INTEGER.UNSIGNED,
         autoIncrement: true,
         primaryKey: true,
       },
@@ -111,87 +93,52 @@ export const initTask = (sequelize: Sequelize) => {
         allowNull: true,
       },
       status: {
-        type: DataTypes.ENUM('todo', 'in-progress', 'review', 'completed'),
+        type: DataTypes.ENUM('todo', 'inProgress', 'testing', 'completed'),
         allowNull: false,
         defaultValue: 'todo',
       },
-      priority: {
-        type: DataTypes.ENUM('low', 'medium', 'high', 'urgent'),
-        allowNull: false,
-        defaultValue: 'medium',
-      },
-      dueDate: {
-        type: DataTypes.DATE,
+      deadline: {
+        type: DataTypes.DATEONLY,
         allowNull: true,
       },
-      projectId: {
+      goal_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: 'projects',
+          model: 'goals',
           key: 'id',
         },
+        onDelete: 'CASCADE',
       },
-      assignedToId: {
+      // Removed project_id field as per database documentation
+      // Tasks should only belong to goals, not directly to projects
+      assigned_to_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: {
           model: 'users',
           key: 'id',
         },
-      },
-      createdById: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'users',
-          key: 'id',
-        },
-      },
-      estimatedHours: {
-        type: DataTypes.DECIMAL(5, 2),
-        allowNull: true,
-        validate: {
-          min: 0,
-        },
-      },
-      actualHours: {
-        type: DataTypes.DECIMAL(5, 2),
-        allowNull: true,
-        validate: {
-          min: 0,
-        },
-      },
-      createdAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
-      },
-      updatedAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW,
+        onDelete: 'SET NULL',
       },
     },
     {
       sequelize,
       tableName: 'tasks',
       timestamps: true,
+      underscored: true,
       indexes: [
         {
           fields: ['status'],
         },
         {
-          fields: ['priority'],
+          fields: ['goal_id'],
         },
         {
-          fields: ['projectId'],
+          fields: ['assigned_to_id'],
         },
         {
-          fields: ['assignedToId'],
-        },
-        {
-          fields: ['dueDate'],
+          fields: ['deadline'],
         },
       ],
       hooks: {

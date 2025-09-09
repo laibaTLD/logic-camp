@@ -5,19 +5,18 @@ export interface ProjectAttributes {
   id: number;
   name: string;
   description?: string;
-  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  startDate?: Date;
-  endDate?: Date;
-  createdById: number;
-  teamId: number;
-  team?: { id: number; name: string }[];
+  status: 'todo' | 'inProgress' | 'testing' | 'completed' | 'archived';
+  start_date?: Date;
+  end_date?: Date;
+  team_id: number;
+  owner_id: number;
+  files?: object | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export interface ProjectCreationAttributes
-  extends Optional<ProjectAttributes, 'id' | 'createdAt' | 'updatedAt' | 'description' | 'startDate' | 'endDate'> {}
+  extends Optional<ProjectAttributes, 'id' | 'createdAt' | 'updatedAt' | 'description' | 'start_date' | 'end_date' | 'files'> {}
 
 class Project extends Model<ProjectAttributes, ProjectCreationAttributes>
   implements ProjectAttributes {
@@ -25,12 +24,12 @@ class Project extends Model<ProjectAttributes, ProjectCreationAttributes>
   declare id: number;
   declare name: string;
   declare description?: string;
-  declare status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
-  declare priority: 'low' | 'medium' | 'high' | 'urgent';
-  declare startDate?: Date;
-  declare endDate?: Date;
-  declare createdById: number;
-  declare teamId: number;
+  declare status: 'todo' | 'inProgress' | 'testing' | 'completed' | 'archived';
+  declare start_date?: Date;
+  declare end_date?: Date;
+  declare team_id: number;
+  declare owner_id: number;
+  declare files?: object | null;
 
   // timestamps
   declare readonly createdAt: Date;
@@ -46,9 +45,9 @@ class Project extends Model<ProjectAttributes, ProjectCreationAttributes>
   async notifyTeamMembers(action: 'created' | 'updated') {
     try {
       if (action === 'created') {
-        await notifyProjectCreated([this.createdById], this.name, this.id);
+        await notifyProjectCreated([this.owner_id], this.name, this.id);
       } else if (action === 'updated') {
-        await notifyProjectUpdated([this.createdById], this.name, this.status, this.id);
+        await notifyProjectUpdated([this.owner_id], this.name, this.status, this.id);
       }
     } catch (error) {
       console.error(`Failed to send ${action} notification for project ${this.id}:`, error);
@@ -76,49 +75,51 @@ export const initProject = (sequelize: Sequelize) => {
         allowNull: true,
       },
       status: {
-        type: DataTypes.ENUM('planning', 'active', 'on-hold', 'completed', 'cancelled'),
+        type: DataTypes.ENUM('todo', 'inProgress', 'testing', 'completed', 'archived'),
         allowNull: false,
-        defaultValue: 'planning',
+        defaultValue: 'todo',
       },
-      priority: {
-        type: DataTypes.ENUM('low', 'medium', 'high', 'urgent'),
-        allowNull: false,
-        defaultValue: 'medium',
-      },
-      startDate: {
-        type: DataTypes.DATE,
+      start_date: {
+        type: DataTypes.DATEONLY,
         allowNull: true,
       },
-      endDate: {
-        type: DataTypes.DATE,
+      end_date: {
+        type: DataTypes.DATEONLY,
         allowNull: true,
       },
-      createdById: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'users',
-          key: 'id',
-        },
-      },
-      teamId: {
+      team_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
           model: 'teams',
           key: 'id',
         },
+        onDelete: 'CASCADE',
+      },
+      owner_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'users',
+          key: 'id',
+        },
+        onDelete: 'SET NULL',
+      },
+      files: {
+        type: DataTypes.JSON,
+        allowNull: true,
       },
     },
     {
       sequelize,
       tableName: 'projects',
-      timestamps: true, // Sequelize auto-generates createdAt & updatedAt
+      timestamps: true,
+      underscored: true,
       indexes: [
+        { fields: ['name'] },
         { fields: ['status'] },
-        { fields: ['priority'] },
-        { fields: ['createdById'] },
-        { fields: ['teamId'] },
+        { fields: ['team_id'] },
+        { fields: ['owner_id'] },
       ],
       hooks: {
         afterCreate: async (project: Project) => {

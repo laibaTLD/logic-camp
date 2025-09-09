@@ -7,13 +7,11 @@ import { authenticateUser } from '@/lib/auth';
 // Validation schemas
 const createTaskSchema = z.object({
   title: z.string().min(1, 'Task title is required').max(200, 'Task title must be less than 200 characters'),
-  description: z.string().optional(),
-  status: z.enum(['todo', 'in-progress', 'review', 'completed']).default('todo'),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
-  dueDate: z.string().optional(), // parse manually to Date
-  assignedToId: z.number().optional(),
-  estimatedHours: z.number().min(0).optional(),
-  projectId: z.number().min(1, 'Project ID is required'),
+  description: z.string().nullable().optional(),
+  status: z.enum(['todo', 'inProgress', 'testing', 'completed']).default('todo'),
+  dueDate: z.string().nullable().optional(),
+  assignedToId: z.number().nullable().optional(),
+  goalId: z.number().min(1, 'Goal ID is required'),
 });
 
 const updateTaskSchema = createTaskSchema.partial().extend({
@@ -21,21 +19,35 @@ const updateTaskSchema = createTaskSchema.partial().extend({
 });
 
 // --------------------
-// GET /api/tasks - Get all tasks for authenticated user
+// GET /api/tasks - Get all tasks for authenticated user, optionally filtered by goalId
 // --------------------
 export async function GET(req: NextRequest) {
   try {
-    const { Task, User, Project } = await getModels();
+    const { Task, User, Goal } = await getModels();
 
     const authResult = await authenticateUser(req);
     if (authResult instanceof NextResponse) return authResult;
     const payload = authResult;
 
+    // Get goalId from query parameters
+    const { searchParams } = new URL(req.url);
+    const goalId = searchParams.get('goalId');
+
+    // Build where clause
+    const whereClause: any = {};
+    if (goalId) {
+      const goalIdNum = parseInt(goalId, 10);
+      if (isNaN(goalIdNum)) {
+        return NextResponse.json({ error: 'Invalid goalId parameter' }, { status: 400 });
+      }
+      whereClause.goal_id = goalIdNum;
+    }
+
     const tasks = await Task.findAll({
+      where: whereClause,
       include: [
         { model: User, as: 'assignedTo', attributes: ['id', 'name', 'email'] },
-        { model: User, as: 'createdBy', attributes: ['id', 'name', 'email'] },
-        { model: Project, as: 'project', attributes: ['id', 'name', 'status'] },
+        { model: Goal, as: 'goal', attributes: ['id', 'title', 'status'] },
       ],
       order: [['createdAt', 'DESC']],
     });
@@ -52,7 +64,7 @@ export async function GET(req: NextRequest) {
 // --------------------
 export async function POST(req: NextRequest) {
   try {
-    const { Task, User, Project } = await getModels();
+    const { Task, User, Goal } = await getModels();
 
     const authResult = await authenticateUser(req);
     if (authResult instanceof NextResponse) return authResult;
@@ -61,29 +73,49 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validatedData = createTaskSchema.parse(body);
 
-    // Verify project exists
-    const project = await Project.findByPk(validatedData.projectId);
-    if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    // Verify goal exists
+    const { Project } = await getModels();
+    const goal = await Goal.findByPk(validatedData.goalId);
+    if (!goal) {
+      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
     }
 
-    const task = await Task.create({
-      title: validatedData.title,
-      description: validatedData.description,
-      status: validatedData.status,
-      priority: validatedData.priority,
-      dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : undefined,
-      projectId: validatedData.projectId,
-      assignedToId: validatedData.assignedToId ?? undefined,
-      estimatedHours: validatedData.estimatedHours ?? undefined,
-      createdById: payload.userId,
+    // Enforce: task deadline within project date range (if dates present)
+    if (validatedData.dueDate) {
+      const project = await Project.findByPk(goal.project_id);
+      if (project) {
+        const due = new Date(validatedData.dueDate);
+        if (project.start_date && due < new Date(project.start_date)) {
+          return NextResponse.json({ error: 'Task deadline is before project start_date' }, { status: 422 });
+        }
+        if (project.end_date && due > new Date(project.end_date)) {
+          return NextResponse.json({ error: 'Task deadline is after project end_date' }, { status: 422 });
+        }
+      }
+    }
+
+    // Verify assignee exists if provided
+    const assigneeId = validatedData.assignedToId ?? null;
+    if (assigneeId) {
+      const assignee = await User.findByPk(assigneeId, { attributes: ['id'] });
+      if (!assignee) {
+        return NextResponse.json({ error: 'Assigned user not found' }, { status: 400 });
+      }
+    }
+
+      const task = await Task.create({
+        title: validatedData.title,
+        description: validatedData.description ?? undefined,
+        status: validatedData.status,
+      deadline: validatedData.dueDate ? new Date(validatedData.dueDate) : undefined,
+        goal_id: validatedData.goalId,
+      assigned_to_id: assigneeId ?? undefined,
     });
 
     const createdTask = await Task.findByPk(task.id, {
       include: [
         { model: User, as: 'assignedTo', attributes: ['id', 'name', 'email'] },
-        { model: User, as: 'createdBy', attributes: ['id', 'name', 'email'] },
-        { model: Project, as: 'project', attributes: ['id', 'name', 'status'] },
+        { model: Goal, as: 'goal', attributes: ['id', 'title', 'status'] },
       ],
     });
 
@@ -107,7 +139,7 @@ export async function POST(req: NextRequest) {
 // --------------------
 export async function PATCH(req: NextRequest) {
   try {
-    const { Task, User, Project } = await getModels();
+    const { Task, User, Goal } = await getModels();
 
     const authResult = await authenticateUser(req);
     if (authResult instanceof NextResponse) return authResult;
@@ -121,23 +153,37 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
+    // Verify assignee exists if provided
+    let newAssignedId: number | null | undefined = undefined;
+    if (validatedData.assignedToId !== undefined) {
+      if (validatedData.assignedToId === null) {
+        newAssignedId = null;
+      } else {
+        const assignee = await User.findByPk(validatedData.assignedToId, { attributes: ['id'] });
+        if (!assignee) {
+          return NextResponse.json({ error: 'Assigned user not found' }, { status: 400 });
+        }
+        newAssignedId = validatedData.assignedToId;
+      }
+    }
+
     // Update task
     await task.update({
       title: validatedData.title ?? task.title,
       description: validatedData.description ?? task.description,
       status: validatedData.status ?? task.status,
-      priority: validatedData.priority ?? task.priority,
-      dueDate: validatedData.dueDate ? new Date(validatedData.dueDate) : task.dueDate,
-      assignedToId: validatedData.assignedToId ?? task.assignedToId,
-      estimatedHours: validatedData.estimatedHours ?? task.estimatedHours,
-      projectId: validatedData.projectId ?? task.projectId,
+      deadline: validatedData.dueDate ? new Date(validatedData.dueDate) : task.deadline,
+      assigned_to_id: newAssignedId !== undefined ? newAssignedId : task.assigned_to_id,
+      goal_id: validatedData.goalId ?? task.goal_id,
     });
+
+    // No multi-assignee support in schema; nothing else to update
 
     const updatedTask = await Task.findByPk(task.id, {
       include: [
         { model: User, as: 'assignedTo', attributes: ['id', 'name', 'email'] },
-        { model: User, as: 'createdBy', attributes: ['id', 'name', 'email'] },
-        { model: Project, as: 'project', attributes: ['id', 'name', 'status'] },
+        
+        { model: Goal, as: 'goal', attributes: ['id', 'title', 'status'] },
       ],
     });
 

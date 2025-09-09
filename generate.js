@@ -2,7 +2,7 @@
 import bcrypt from "bcryptjs";
 
 async function generateHash() {
-  const password = "12345"; // change this to your admin password
+  const password = "!@#$%"; // change this to your admin password
   const saltRounds = 10;
 
   try {

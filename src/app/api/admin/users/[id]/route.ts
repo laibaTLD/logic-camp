@@ -7,14 +7,14 @@ import { verifyToken } from "@/lib/auth";
 // Helper: Verify Admin
 // ------------------
 async function verifyAdmin(req: NextRequest) {
-  const payload = await verifyToken(req);
-  if (!payload) {
+  const authResult = await verifyToken(req);
+  if (!authResult.success || !authResult.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (payload.role !== "admin") {
+  if (authResult.user.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  return payload;
+  return authResult.user;
 }
 
 // ------------------
@@ -41,7 +41,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { name, email, role, isApproved } = body;
+  const { name, email, role, isApproved, isActive } = body;
 
   if (!name && !email && !role && isApproved === undefined) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
@@ -55,15 +55,24 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     if (name) user.name = name;
     if (email) user.email = email;
-    if (role) user.role = role;
-    if (isApproved !== undefined) user.set('isApproved', isApproved);
+    if (role !== undefined) {
+      const normalizedRole = role === 'teamLead' ? 'team_lead' : role;
+      const allowed = ['admin', 'team_lead', 'employee'];
+      if (!allowed.includes(normalizedRole)) {
+        return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+      }
+      user.set('role', normalizedRole);
+    }
+    if (isApproved !== undefined) user.set('is_approved', !!isApproved);
+    if (isActive !== undefined) user.set('is_active', !!isActive);
 
     await user.save();
 
     return NextResponse.json({ message: "User updated", user });
   } catch (err: any) {
     console.error(err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    const message = err?.message || 'Server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

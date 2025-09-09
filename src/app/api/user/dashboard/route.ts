@@ -3,14 +3,14 @@ import { verifyToken } from '@/lib/auth';
 import { getModels } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
-  const payload = await verifyToken(req);
-  if (!payload) {
+  const authResult = await verifyToken(req);
+  if (!authResult.success || !authResult.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const { User, Project, Task, Notification } = await getModels();
-    const user = await User.findByPk(payload.userId, {
+    const user = await User.findByPk(authResult.user.userId, {
       include: [
         { model: Project, as: 'projects' },
         { model: Task, as: 'assignedTasks' },
