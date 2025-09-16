@@ -70,7 +70,7 @@ export default function EditTeamModal({ isOpen, onClose, team, allUsers, onSaved
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="w-full max-w-2xl rounded-2xl border border-slate-700/60 bg-slate-800/80 backdrop-blur-xl shadow-2xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-white">Edit Team</h2>
+          <h2 className="text-lg font-semibold text-white">Edit Team</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
         </div>
 

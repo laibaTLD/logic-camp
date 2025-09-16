@@ -109,7 +109,7 @@ export default function DashboardOverview({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Dashboard Overview</h1>
+          <h1 className="text-xl font-bold text-white mb-2">Dashboard Overview</h1>
           <p className="text-slate-400">Welcome back! Here's what's happening with your team.</p>
         </div>
         <div className="text-right">
@@ -140,7 +140,7 @@ export default function DashboardOverview({
                     {card.loading ? (
                       <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
                     ) : (
-                      <div className="text-3xl font-bold text-white group-hover:scale-110 transition-transform duration-300">
+                      <div className="text-xl font-bold text-white group-hover:scale-110 transition-transform duration-300">
                         {card.value}
                       </div>
                     )}
@@ -148,7 +148,7 @@ export default function DashboardOverview({
                 </div>
                 
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-1">{card.title}</h3>
+                  <h3 className="text-sm font-semibold text-white mb-1">{card.title}</h3>
                   <p className="text-sm text-slate-300">{card.subtitle}</p>
                 </div>
               </div>
@@ -170,7 +170,7 @@ export default function DashboardOverview({
                 <Icon className={`w-5 h-5 ${metric.color}`} />
                 <div>
                   <div className="text-sm text-slate-400">{metric.label}</div>
-                  <div className="text-lg font-semibold text-white">{metric.value}</div>
+                  <div className="text-sm font-semibold text-white">{metric.value}</div>
                 </div>
               </div>
             </div>
@@ -180,7 +180,7 @@ export default function DashboardOverview({
 
       {/* Recent Activity Section */}
       <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-xl">
-        <h2 className="text-xl font-semibold text-white mb-4">Recent Activity</h2>
+        <h2 className="text-lg font-semibold text-white mb-3">Recent Activity</h2>
         <div className="space-y-3">
           {/* Activity items would go here - for now showing placeholder */}
           <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">

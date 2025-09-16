@@ -4,7 +4,13 @@ export interface GoalAttributes {
   id: number;
   title: string;
   description?: string;
-  status: 'todo' | 'inProgress' | 'testing' | 'completed';
+  statuses?: Array<{
+    id: number;
+    title: string;
+    description?: string;
+    color: string;
+  }> | null;
+  status_title: string;
   project_id: number;
   deadline?: Date;
   createdAt?: Date;
@@ -12,7 +18,7 @@ export interface GoalAttributes {
 }
 
 export interface GoalCreationAttributes
-  extends Optional<GoalAttributes, 'id' | 'createdAt' | 'updatedAt' | 'description' | 'deadline'> {}
+  extends Optional<GoalAttributes, 'id' | 'createdAt' | 'updatedAt' | 'description' | 'deadline' | 'statuses' | 'status_title'> {}
 
 class Goal extends Model<GoalAttributes, GoalCreationAttributes>
   implements GoalAttributes {
@@ -20,7 +26,13 @@ class Goal extends Model<GoalAttributes, GoalCreationAttributes>
   declare id: number;
   declare title: string;
   declare description?: string;
-  declare status: 'todo' | 'inProgress' | 'testing' | 'completed';
+  declare statuses?: Array<{
+    id: number;
+    title: string;
+    description?: string;
+    color: string;
+  }> | null;
+  declare status_title: string;
   declare project_id: number;
   declare deadline?: Date;
 
@@ -54,10 +66,16 @@ export const initGoal = (sequelize: Sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      status: {
-        type: DataTypes.ENUM('todo', 'inProgress', 'testing', 'completed'),
+      statuses: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        comment: 'JSON array of status objects with title, description, and color'
+      },
+      status_title: {
+        type: DataTypes.STRING(50),
         allowNull: false,
         defaultValue: 'todo',
+        comment: 'Current status title'
       },
       project_id: {
         type: DataTypes.INTEGER,
@@ -80,7 +98,7 @@ export const initGoal = (sequelize: Sequelize) => {
       underscored: true,
       indexes: [
         { fields: ['project_id'] },
-        { fields: ['status'] },
+        { fields: ['status_title'] },
         { fields: ['deadline'] },
       ],
     }

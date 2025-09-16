@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { createTask } from '@/services/taskService';
 import Link from 'next/link';
 
-export default function NewTaskPage({ params }: { params: { id: string, goalId: string } }) {
+export default function NewTaskPage() {
   const router = useRouter();
+  const params = useParams();
   const projectId = Number(params.id);
   const goalId = Number(params.goalId);
   

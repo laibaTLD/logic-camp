@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import NewTeamModal from "./components/NewTeamModal";
@@ -19,7 +19,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import TeamGrid from "../../components/TeamGrid";
 import EditTeamModal from "./components/EditTeamModal";
 import TaskGrid from "../../components/TaskGrid";
-import ProjectGrid from "../../components/ProjectGrid";
+import AdminProjectsGrid from "./components/ProjectsGrid";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -35,6 +35,11 @@ export default function AdminDashboard() {
   const handleEditTeam = (team: { id: number; name: string; members?: any[] }) => {
     setEditingTeam(team);
   };
+
+  const handleEditProject = (project: any) => {
+    router.push(`/admin/projects/${project.id}`);
+  };
+
 
   const handleEditTask = (task: any) => {
     // Implement task editing functionality
@@ -101,7 +106,7 @@ export default function AdminDashboard() {
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold text-white">User Management</h1>
+              <h1 className="text-xl font-bold text-white">User Management</h1>
               <div className="text-sm text-slate-400">
                 {users.length} total users
               </div>
@@ -124,7 +129,7 @@ export default function AdminDashboard() {
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold text-white">Team Management</h1>
+              <h1 className="text-xl font-bold text-white">Team Management</h1>
               <button
                 onClick={() => setIsTeamModalOpen(true)}
                 className="inline-flex items-center gap-2 rounded-xl border border-purple-500/50 bg-gradient-to-r from-purple-600 to-cyan-600 px-6 py-3 text-sm font-medium text-white hover:from-purple-500 hover:to-cyan-500 transition-all duration-300 shadow-lg hover:shadow-xl"
@@ -218,13 +223,13 @@ export default function AdminDashboard() {
             )}
           </div>
         );
-      case 'projects':
-      case 'active-projects':
-      case 'archive-projects':
+      case 'projects': {
+        // Use server-side pagination directly for the main projects list
+        const currentPage = Math.max(1, projectsPage);
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold text-white">Project Management</h1>
+              <h1 className="text-xl font-bold text-white">Project Management</h1>
               <button
                 onClick={() => setActiveSection('create-project')}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm text-white shadow-md hover:shadow-lg hover:scale-[1.02] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
@@ -235,16 +240,91 @@ export default function AdminDashboard() {
                 Create Project
               </button>
             </div>
-            <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-xl">
-              <ProjectGrid 
+            <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-3 sm:p-4 lg:p-6 backdrop-blur-xl overflow-hidden">
+              <AdminProjectsGrid 
                 projects={projects}
                 loadingProjects={loadingProjects}
-                onEditProject={(project) => editProject(project.id, project)}
-                onDeleteProject={deleteProject}
+                editProject={handleEditProject}
+                deleteProject={deleteProject}
+                page={currentPage}
+                total={totalProjects}
+                totalPages={totalProjectsPages}
+                search={projectsSearch}
+                onChangeSearch={handleProjectsSearch}
+                onChangePage={handleProjectsPageChange}
+                perPage={projectsPerPage}
               />
             </div>
           </div>
         );
+      }
+      case 'projects-testing': {
+        const testing = (projects || []).filter((p: any) => {
+          const s = (p as any).status_title || (p as any).status;
+          return (s || '').toString().toLowerCase() === 'testing';
+        });
+        const totalTesting = testing.length;
+        const totalPagesTesting = Math.max(1, Math.ceil(totalTesting / projectsPerPage));
+        const currentPageTesting = Math.min(Math.max(1, projectsPage), totalPagesTesting);
+        const startTesting = (currentPageTesting - 1) * projectsPerPage;
+        const pageTesting = testing.slice(startTesting, startTesting + projectsPerPage);
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl font-bold text-white">Testing Projects</h1>
+            </div>
+            <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-3 sm:p-4 lg:p-6 backdrop-blur-xl overflow-hidden">
+              <AdminProjectsGrid 
+                projects={pageTesting}
+                loadingProjects={loadingProjects}
+                editProject={handleEditProject}
+                deleteProject={deleteProject}
+                page={currentPageTesting}
+                total={totalTesting}
+                totalPages={totalPagesTesting}
+                search={projectsSearch}
+                onChangeSearch={handleProjectsSearch}
+                onChangePage={handleProjectsPageChange}
+                perPage={projectsPerPage}
+              />
+            </div>
+          </div>
+        );
+      }
+      case 'projects-archived': {
+        const archived = (projects || []).filter((p: any) => {
+          const s = (p as any).status_title || (p as any).status;
+          const raw = (s || '').toString().toLowerCase();
+          return raw === 'done' || raw === 'completed';
+        });
+        const totalArchived = archived.length;
+        const totalPagesArchived = Math.max(1, Math.ceil(totalArchived / projectsPerPage));
+        const currentPageArchived = Math.min(Math.max(1, projectsPage), totalPagesArchived);
+        const startArchived = (currentPageArchived - 1) * projectsPerPage;
+        const pageArchived = archived.slice(startArchived, startArchived + projectsPerPage);
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl font-bold text-white">Archived Projects</h1>
+            </div>
+            <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-3 sm:p-4 lg:p-6 backdrop-blur-xl overflow-hidden">
+              <AdminProjectsGrid 
+                projects={pageArchived}
+                loadingProjects={loadingProjects}
+                editProject={handleEditProject}
+                deleteProject={deleteProject}
+                page={currentPageArchived}
+                total={totalArchived}
+                totalPages={totalPagesArchived}
+                search={projectsSearch}
+                onChangeSearch={handleProjectsSearch}
+                onChangePage={handleProjectsPageChange}
+                perPage={projectsPerPage}
+              />
+            </div>
+          </div>
+        );
+      }
       case 'create-project':
         return (
           <CreateProjectSection
@@ -260,14 +340,14 @@ export default function AdminDashboard() {
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold text-white">Global Task Management</h1>
+              <h1 className="text-xl font-bold text-white">Global Task Management</h1>
               <div className="text-sm text-slate-400">
                 {tasks.length} total tasks
               </div>
             </div>
             <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-xl">
               <TaskGrid 
-                tasks={tasks} 
+                tasks={tasks as any} 
                 loadingTasks={loadingTasks} 
                 onEditTask={handleEditTask} 
                 onDeleteTask={handleDeleteTask} 
@@ -282,7 +362,7 @@ export default function AdminDashboard() {
         );
       case 'goals-create':
         return (
-          <GoalsCreatePage />
+          <GoalsCreatePage onBack={() => setActiveSection('goals')} />
         );
       default:
         return (
@@ -350,6 +430,13 @@ export default function AdminDashboard() {
     editUser,
     projects,
     loadingProjects,
+    projectsPage,
+    projectsPerPage,
+    projectsSearch,
+    totalProjects,
+    totalProjectsPages,
+    setProjectsSearch,
+    fetchProjects,
     teams,
     loadingTeams,
     teamsPage,
@@ -368,11 +455,20 @@ export default function AdminDashboard() {
     deleteProject,
     addTaskToProject,
   } = useAdminData(isAuthenticated);
+  
+  const handleProjectsSearch = useCallback((q: string) => {
+    setProjectsSearch(q);
+    fetchProjects(1, q);
+  }, [setProjectsSearch, fetchProjects]);
+
+  const handleProjectsPageChange = useCallback((newPage: number) => {
+    fetchProjects(newPage, projectsSearch);
+  }, [fetchProjects, projectsSearch]);
 
   if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0b0b10] text-white">
-        <div className="text-lg">Verifying authentication...</div>
+        <div className="text-sm">Verifying authentication...</div>
       </div>
     );
   }
@@ -390,7 +486,7 @@ export default function AdminDashboard() {
          <main className="flex-1 lg:ml-80 transition-all duration-300 animate-fadeIn">
            <Header />
            
-           <div className="px-4 md:px-6 lg:px-10 py-8">
+           <div className="px-2 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-6 lg:py-8">
                {renderContent()}
            </div>
          </main>
@@ -420,7 +516,6 @@ export default function AdminDashboard() {
         onSaved={async () => { await fetchTeams(teamsPage); }}
         onError={(m) => toast.error(m)}
       />
-
 
     </div>
   );

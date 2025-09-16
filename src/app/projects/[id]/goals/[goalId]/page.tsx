@@ -16,7 +16,7 @@ export default async function GoalTasksPage({ params }: { params: Promise<{ id: 
   }
   
   const goal = await getGoalById(goalId);
-  if (!goal || goal.projectId !== projectId) {
+  if (!goal || goal.project_id !== projectId) {
     notFound();
   }
   

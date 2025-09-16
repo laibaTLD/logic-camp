@@ -33,11 +33,11 @@ export const getTasksByGoal = async (goalId: number): Promise<Task[]> => {
   return res.json();
 };
 
-export const updateTaskStatus = async (taskId: number, status: string) => {
+export const updateTaskStatus = async (taskId: number, statusTitle: string) => {
   const res = await fetch(`${API_URL}/${taskId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ statusTitle }),
   });
   if (!res.ok) throw new Error("Failed to update task status");
   return res.json();

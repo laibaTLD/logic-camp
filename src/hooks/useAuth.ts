@@ -26,7 +26,8 @@ export function useAuth() {
         throw new Error('Auth check failed');
       }
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') ? await response.json() : await Promise.reject(new Error('Unexpected non-JSON response from /api/auth/check'));
       setAuthState({
         isAuthenticated: true,
         user: data.user,
@@ -57,12 +58,13 @@ export function useAuth() {
         credentials: 'include',
       });
 
+      const contentType = response.headers.get('content-type') || '';
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = contentType.includes('application/json') ? await response.json().catch(() => ({})) : {} as any;
         throw new Error(errorData.message || 'Login failed');
       }
 
-      const data = await response.json();
+      const data = contentType.includes('application/json') ? await response.json() : await Promise.reject(new Error('Unexpected non-JSON response from /api/auth/login'));
       
       // Store token in localStorage
       if (data.token) {

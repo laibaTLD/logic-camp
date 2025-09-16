@@ -25,12 +25,12 @@ export interface Project {
   description: string;
   progress?: number;
   updatedAt: string;
-  status?: "planning" | "active" | "on-hold" | "completed" | "cancelled";
-  priority?: "low" | "medium" | "high" | "urgent";
-  startDate?: string;
-  endDate?: string;
-  teamId?: number | null;
-  ownerId?: number;
+  statuses?: Array<{ id: number; title: string; description?: string; color: string }>;
+  status_title?: string;
+  start_date?: string;
+  end_date?: string;
+  team_id?: number | null;
+  owner_id?: number;
   members?: User[];
   team?: {
     id: number;
@@ -67,8 +67,14 @@ export default function useAdminData(isAuthenticated: boolean = false) {
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
 
+  const [projectsAll, setProjectsAll] = useState<Project[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
+  const [projectsPage, setProjectsPage] = useState(1);
+  const [projectsPerPage] = useState(2);
+  const [projectsSearch, setProjectsSearch] = useState("");
+  const [totalProjects, setTotalProjects] = useState(0);
+  const [totalProjectsPages, setTotalProjectsPages] = useState(0);
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(true);
@@ -140,30 +146,60 @@ export default function useAdminData(isAuthenticated: boolean = false) {
   }, [getAuthHeaders, effectiveAuthenticated]);
 
   // -----------------
-  // Fetch Projects
+  // Fetch Projects (server-side pagination using page & limit)
   // -----------------
-  useEffect(() => {
+  const fetchProjects = useCallback(async (page: number = 1, search: string = "") => {
     if (!effectiveAuthenticated) {
       setLoadingProjects(false);
       return;
     }
-
-    async function fetchProjects() {
-      try {
-        const headers = getAuthHeaders();
-        const res = await fetch("/api/projects", { headers, credentials: 'include' });
-        if (!res.ok) throw new Error(`Error ${res.status}`);
-        const data = await res.json();
-        setProjects(Array.isArray(data) ? data : data.projects || []);
-      } catch (err) {
-        console.error("Error fetching projects", err);
-        setProjects([]);
-      } finally {
-        setLoadingProjects(false);
-      }
+    try {
+      setLoadingProjects(true);
+      const headers = getAuthHeaders();
+      const params = new URLSearchParams({ page: String(page), limit: String(projectsPerPage) });
+      if (search.trim()) params.set('search', search.trim());
+      const res = await fetch(`/api/admin/projects?${params.toString()}`, { headers, credentials: 'include' });
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const data = await res.json();
+      const rawProjects: any[] = Array.isArray(data.projects) ? data.projects : [];
+      const normalized = rawProjects.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        progress: p.progress,
+        updatedAt: p.updatedAt || p.updated_at,
+        statuses: p.statuses,
+        status_title: p.status_title,
+        priority: p.priority,
+        startDate: p.startDate || p.start_date,
+        endDate: p.endDate || p.end_date,
+        teamId: p.teamId || p.team_id,
+        ownerId: p.ownerId || p.owner_id,
+        members: p.members,
+        team: p.team,
+        owner: p.owner,
+      }));
+      setProjects(normalized);
+      setTotalProjects(data.total || 0);
+      setTotalProjectsPages(data.totalPages || Math.max(1, Math.ceil((data.total || 0) / projectsPerPage)));
+      setProjectsPage(data.page || page);
+    } catch (err) {
+      console.error("Error fetching projects", err);
+      setProjects([]);
+      setTotalProjects(0);
+      setTotalProjectsPages(0);
+    } finally {
+      setLoadingProjects(false);
     }
-    fetchProjects();
-  }, [getAuthHeaders, effectiveAuthenticated]);
+  }, [getAuthHeaders, effectiveAuthenticated, projectsPerPage]);
+
+  useEffect(() => {
+    if (effectiveAuthenticated) {
+      fetchProjects(1, "");
+    } else {
+      setLoadingProjects(false);
+    }
+  }, [effectiveAuthenticated, fetchProjects]);
 
   // -----------------
   // Fetch Teams with Pagination
@@ -380,294 +416,161 @@ export default function useAdminData(isAuthenticated: boolean = false) {
     [getAuthHeaders, fetchTeams, teamsPage]
   );
 
-  const editTeam = useCallback(
-    async (id: number, updates: { name?: string; members?: number[] }) => {
-      try {
-        // Update team name if provided
-        if (updates.name !== undefined) {
-          const updateRes = await fetch(`/api/teams/${id}`, {
-            method: "PATCH",
-            headers: getAuthHeaders(),
-            credentials: 'include',
-            body: JSON.stringify({ name: updates.name }),
-          });
-
-          if (!updateRes.ok) {
-            const errorData = await updateRes.json().catch(() => ({}));
-            if (updateRes.status === 409) {
-              throw new Error("A team with this name already exists");
-            }
-            throw new Error(errorData?.error || "Failed to update team name");
-          }
-        }
-
-        // Update team members if provided
-        if (updates.members !== undefined) {
-          const membersRes = await fetch(`/api/teams/${id}/members`, {
-            method: "PUT",
-            headers: getAuthHeaders(),
-            credentials: 'include',
-            body: JSON.stringify({ userIds: updates.members }),
-          });
-
-          if (!membersRes.ok) {
-            const errorData = await membersRes.json().catch(() => ({}));
-            throw new Error(errorData?.error || "Failed to update team members");
-          }
-        }
-
-        // Refresh teams list to get updated data
-        const teamsRes = await fetch("/api/teams", {
-          headers: getAuthHeaders(),
-          credentials: 'include',
-        });
-        
-        if (teamsRes.ok) {
-          const data = await teamsRes.json();
-          setTeams(Array.isArray(data.teams) ? data.teams : []);
-        }
-
-        return true;
-      } catch (err) {
-        console.error("Error editing team", err);
-        throw err;
-      }
-    },
-    [getAuthHeaders]
-  );
-
-  const deleteTeam = useCallback(
-    async (id: number) => {
-      try {
-        const res = await fetch(`/api/teams/${id}`, {
-          method: "DELETE",
-          headers: getAuthHeaders(),
-          credentials: 'include',
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData?.error || "Failed to delete team");
-        }
-
-        setTeams(prev => prev.filter(t => t.id !== id));
-        return true;
-      } catch (err) {
-        console.error("Error deleting team", err);
-        throw err;
-      }
-    },
-    [getAuthHeaders]
-  );
-
-  const deleteTeamCascade = useCallback(
-    async (id: number) => {
-      try {
-        const res = await fetch(`/api/teams/${id}/cascade`, {
-          method: "DELETE",
-          headers: getAuthHeaders(),
-          credentials: 'include',
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData?.error || "Failed to delete team with cascade");
-        }
-
-        const result = await res.json();
-        setTeams(prev => prev.filter(t => t.id !== id));
-        return result;
-      } catch (err) {
-        console.error("Error cascade deleting team", err);
-        throw err;
-      }
-    },
-    [getAuthHeaders]
-  );
-
-  // -----------------
-  // Project Actions
-  // -----------------
-  const openProject = useCallback((id: number) => console.log("Open project", id), []);
-
-  const editProject = useCallback(
-    async (id: number, updates: Partial<Project>) => {
-      try {
-        const res = await fetch(`/api/projects/${id}`, {
-          method: "PATCH",
-          headers: getAuthHeaders(),
-          credentials: 'include',
-          body: JSON.stringify(updates),
-        });
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData?.error || `Failed to edit project: ${res.status}`);
-        }
-
-        const result = await res.json();
-        const updatedProject: Project = result.project || result;
-        setProjects(prev => prev.map(p => (p.id === id ? { ...p, ...updatedProject } : p)));
-      } catch (err) {
-        console.error("Error editing project", err);
-        throw err;
-      }
-    },
-    [getAuthHeaders]
-  );
-
-  const deleteProject = useCallback(
-    async (id: number) => {
-      try {
-        const res = await fetch(`/api/projects/${id}`, { method: "DELETE", headers: getAuthHeaders(), credentials: 'include' });
-        if (!res.ok) throw new Error("Failed to delete project");
-        setProjects(prev => prev.filter(p => p.id !== id));
-      } catch (err) {
-        console.error("Error deleting project", err);
-        throw err;
-      }
-    },
-    [getAuthHeaders]
-  );
-
   const addTaskToProject = useCallback(
-    async (id: number, task: { title: string; description?: string }) => {
+    async (projectId: number, task: { title: string; description?: string }) => {
       try {
-        const res = await fetch(`/api/tasks`, {
+        const res = await fetch(`/api/projects/${projectId}/tasks`, {
           method: "POST",
           headers: getAuthHeaders(),
           credentials: 'include',
-          body: JSON.stringify({
-            title: task.title,
-            description: task.description || "Task created from project",
-            status: "todo",
-            priority: "medium",
-            projectId: id,
-          }),
+          body: JSON.stringify(task),
         });
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData?.error || "Failed to add task");
-        }
-        await res.json();
+        if (!res.ok) throw new Error("Failed to add task");
+        return await res.json();
       } catch (err) {
-        console.error("Error adding task", err);
+        console.error("Error adding task to project", err);
         throw err;
       }
     },
     [getAuthHeaders]
   );
 
+  const openProject = useCallback((projectId: number) => {
+    window.location.href = `/admin/projects/${projectId}`;
+  }, []);
+
   const createProject = useCallback(
-    async (project: {
-      name: string;
-      description: string;
-      status?: 'todo' | 'inProgress' | 'testing' | 'completed' | 'archived';
-      startDate?: string;
-      endDate?: string;
-      teamId?: number | null;
-    } | FormData) => {
+    async (project: { name: string; description?: string; teamId: number; statusTitle?: string; customStatuses?: any[] }) => {
       try {
-        // Handle FormData object
-        if (project instanceof FormData) {
-          const teamId = project.get('teamId');
-          if (!teamId) throw new Error("Project must belong to a team");
-          
-          // FormData can be sent directly without converting to JSON
-          const res = await fetch(`/api/projects`, {
-            method: "POST",
-            // Don't set Content-Type header for FormData - browser will set it with boundary
-            headers: {
-              Authorization: getAuthHeaders().Authorization
-            },
-            credentials: 'include',
-            body: project, // Send FormData directly
-          });
-
-          if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            throw new Error(errorData?.error || `Failed to create project: ${res.status}`);
-          }
-
-          const result = await res.json();
-          const newProject: Project = result.project || result;
-          setProjects(prev => [...prev, newProject]);
-          return newProject;
-        } 
-        // Handle regular object
-        else {
-          if (!project.teamId) throw new Error("Project must belong to a team");
-
-          const payload: any = {
-            name: project.name,
-            description: project.description,
-            status: project.status || 'todo',
-            teamId: project.teamId,
-          };
-
-          if (project.startDate) payload.startDate = project.startDate;
-          if (project.endDate) payload.endDate = project.endDate;
-
-          const res = await fetch(`/api/projects`, {
-            method: "POST",
-            headers: getAuthHeaders(),
-            credentials: 'include',
-            body: JSON.stringify(payload),
-          });
-
-          if (!res.ok) {
-            const errorData = await res.json().catch(() => ({}));
-            throw new Error(errorData?.error || `Failed to create project: ${res.status}`);
-          }
-
-          const result = await res.json();
-          const newProject: Project = result.project || result;
-          setProjects(prev => [...prev, newProject]);
-          return newProject;
+        const res = await fetch(`/api/projects`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          credentials: 'include',
+          body: JSON.stringify(project),
+        });
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData?.error || "Failed to create project");
         }
+        await fetchProjects(projectsPage, projectsSearch);
       } catch (err) {
         console.error("Error creating project", err);
         throw err;
       }
     },
-    [getAuthHeaders]
+    [getAuthHeaders, fetchProjects, projectsPage, projectsSearch]
   );
 
-  // -----------------
-  // Return
-  // -----------------
+  const editProject = useCallback(
+    async (projectId: number, updates: any) => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}`, {
+          method: "PATCH",
+          headers: getAuthHeaders(),
+          credentials: 'include',
+          body: JSON.stringify(updates),
+        });
+        if (!res.ok) throw new Error("Failed to update project");
+        await fetchProjects(projectsPage, projectsSearch);
+      } catch (err) {
+        console.error("Error updating project", err);
+        throw err;
+      }
+    },
+    [getAuthHeaders, fetchProjects, projectsPage, projectsSearch]
+  );
+
+  const deleteProject = useCallback(
+    async (projectId: number) => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}`, {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+          credentials: 'include',
+        });
+        if (!res.ok) throw new Error("Failed to delete project");
+        await fetchProjects(projectsPage, projectsSearch);
+      } catch (err) {
+        console.error("Error deleting project", err);
+        throw err;
+      }
+    },
+    [getAuthHeaders, fetchProjects, projectsPage, projectsSearch]
+  );
+
+  const deleteTeam = useCallback(
+    async (teamId: number) => {
+      try {
+        const res = await fetch(`/api/teams/${teamId}`, {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+          credentials: 'include',
+        });
+        if (!res.ok) throw new Error("Failed to delete team");
+        await fetchTeams(teamsPage);
+      } catch (err) {
+        console.error("Error deleting team", err);
+        throw err;
+      }
+    },
+    [getAuthHeaders, fetchTeams, teamsPage]
+  );
+
+  const deleteTeamCascade = useCallback(
+    async (teamId: number) => {
+      try {
+        const res = await fetch(`/api/teams/${teamId}/cascade`, {
+          method: "DELETE",
+            headers: getAuthHeaders(),
+            credentials: 'include',
+        });
+        if (!res.ok) throw new Error("Failed to cascade delete team");
+        await fetchTeams(teamsPage);
+      } catch (err) {
+        console.error("Error cascading delete team", err);
+        throw err;
+      }
+    },
+    [getAuthHeaders, fetchTeams, teamsPage]
+  );
+
   return {
     users,
     loadingUsers,
+    approveUser,
+    rejectUser,
+    deleteUser,
+    editUser,
+
     projects,
     loadingProjects,
+    projectsPage,
+    projectsPerPage,
+    projectsSearch,
+    totalProjects,
+    totalProjectsPages,
+    setProjectsSearch,
+    fetchProjects,
+
     teams,
     loadingTeams,
     teamsPage,
     teamsPerPage,
     totalTeams,
     totalTeamsPages,
+    fetchTeams,
+
     tasks,
     loadingTasks,
 
-    // user actions
-    approveUser,
-    rejectUser,
-    deleteUser,
-    editUser,
-
-    // team actions
-    createTeam,
-    editTeam,
-    deleteTeam,
-    deleteTeamCascade,
-    fetchTeams,
-
-    // project actions
     openProject,
+    createProject,
+    createTeam,
     editProject,
     deleteProject,
     addTaskToProject,
-    createProject,
+
+    deleteTeam,
+    deleteTeamCascade,
   };
 }

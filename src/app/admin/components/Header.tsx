@@ -23,11 +23,11 @@ export default function Header({ children }: HeaderProps) {
     <header
       className="sticky top-0 z-20 backdrop-blur-xl bg-black/40 border-b border-white/10 animate-slideDown"
     >
-      <div className="px-6 md:px-10 py-4 flex items-center justify-between">
+      <div className="px-4 md:px-6 py-3 flex items-center justify-between">
         {/* Left: Logo lockup */}
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-[0_0_24px_rgba(99,102,241,0.55)]" />
-          <div className="text-lg md:text-xl font-bold tracking-wide">
+          <div className="text-sm md:text-base font-bold tracking-wide">
             <span className="text-indigo-400">Logic</span>
             <span className="text-purple-400">Camp</span>
           </div>

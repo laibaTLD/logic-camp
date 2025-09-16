@@ -97,7 +97,7 @@ const ProjectChat: React.FC<ProjectChatProps> = ({ projectId }) => {
   };
 
   return (
-    <div className="flex flex-col h-96 bg-gray-800 rounded-lg overflow-hidden">
+    <div className="flex flex-col h-96 bg-slate-900/60 border border-white/10 rounded-xl overflow-hidden">
       {error && <div className="p-4 text-red-500">{error}</div>}
       <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (
@@ -116,21 +116,21 @@ const ProjectChat: React.FC<ProjectChatProps> = ({ projectId }) => {
           </div>
         ))}
       </div>
-      <div className="border-t border-gray-700 p-4">
+      <div className="border-t border-white/10 p-4">
         <div className="flex space-x-2">
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type a message..."
-            className="flex-1 bg-gray-700 text-white rounded px-3 py-2"
+            className="flex-1 bg-slate-800 text-white rounded px-3 py-2 border border-white/10"
           />
           <input
             type="file"
             onChange={(e) => setFile(e.target.files?.[0] || null)}
-            className="text-white"
+            className="text-white text-xs"
           />
-          <button onClick={handleSend} className="bg-blue-600 text-white px-4 py-2 rounded">
+          <button onClick={handleSend} className="bg-indigo-600 text-white px-4 py-2 rounded">
             Send
           </button>
         </div>

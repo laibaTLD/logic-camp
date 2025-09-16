@@ -1,15 +1,4 @@
-interface Goal {
-  id: number;
-  title: string;
-  description?: string;
-  status: 'todo' | 'inProgress' | 'testing' | 'completed';
-  projectId: number;
-  deadline?: string;
-  tasks?: any[];
-  completed: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { Status, Goal } from '@/types';
 
 const API_URL = "/api/goals";
 
@@ -25,13 +14,23 @@ export const getGoalById = async (goalId: number): Promise<Goal> => {
   return res.json();
 };
 
-export const updateGoalStatus = async (goalId: number, status: string) => {
+export const updateGoalStatus = async (goalId: number, statusTitle: string) => {
   const res = await fetch(`${API_URL}/${goalId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ statusTitle }),
   });
   if (!res.ok) throw new Error("Failed to update goal status");
+  return res.json();
+};
+
+export const updateGoal = async (goalId: number, updates: Partial<Goal>) => {
+  const res = await fetch(`${API_URL}/${goalId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error("Failed to update goal");
   return res.json();
 };
 
@@ -44,3 +43,5 @@ export const createGoal = async (goal: Omit<Goal, "id">) => {
   if (!res.ok) throw new Error("Failed to create goal");
   return res.json();
 };
+
+export type { Goal, Status };

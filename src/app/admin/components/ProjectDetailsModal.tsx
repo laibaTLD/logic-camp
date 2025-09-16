@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import AddTaskModal from "./AddTaskModal";
 
 interface ProjectDetailsModalProps {
   project: any;
@@ -50,14 +49,7 @@ export default function ProjectDetailsModal({
   onDelete,
   onAddTask,
 }: ProjectDetailsModalProps) {
-  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
-
   const handleAddTask = () => {
-    setShowAddTaskModal(true);
-  };
-
-  const handleTaskAdded = () => {
-    // Optionally refresh project data or show success message
     if (onAddTask) {
       onAddTask(project);
     }
@@ -74,7 +66,7 @@ export default function ProjectDetailsModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 p-6 pb-4">
-          <h2 className="text-xl font-semibold text-white">{project.name}</h2>
+          <h2 className="text-lg font-semibold text-white">{project.name}</h2>
 
           <button
             onClick={onClose}
@@ -228,13 +220,6 @@ export default function ProjectDetailsModal({
         </div>
       </div>
 
-      {/* Add Task Modal */}
-      <AddTaskModal
-        projectId={project.id}
-        isOpen={showAddTaskModal}
-        onClose={() => setShowAddTaskModal(false)}
-        onTaskAdded={handleTaskAdded}
-      />
     </div>
   );
 }

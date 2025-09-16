@@ -113,7 +113,7 @@ export async function PUT(
     await task.update({
       title: validatedData.title ?? task.title,
       description: validatedData.description ?? task.description,
-      status: validatedData.status ?? task.status,
+      status_title: validatedData.status ?? task.status_title,
       deadline: validatedData.dueDate ? new Date(validatedData.dueDate) : task.deadline,
       assigned_to_id: newAssignedId !== undefined ? newAssignedId : task.assigned_to_id,
       goal_id: validatedData.goalId ?? task.goal_id,

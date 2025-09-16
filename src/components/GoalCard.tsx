@@ -3,14 +3,7 @@
 import { useState } from 'react';
 import { Edit, Trash2, Calendar, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
-interface Goal {
-  id: number;
-  title: string;
-  description?: string;
-  status: 'todo' | 'inProgress' | 'testing' | 'completed';
-  project_id: number;
-  deadline?: string;
-}
+import { Status, Goal } from '@/types';
 
 interface GoalCardProps {
   goal: Goal;
@@ -25,7 +18,10 @@ export default function GoalCard({ goal, index, onEditGoal, onDeleteGoal, deleti
 
   // Determine status theme for styling
   const getStatusTheme = () => {
-    switch (goal.status) {
+    const statusName = goal.status?.name || 'todo';
+    
+    switch (statusName.toLowerCase()) {
+      case 'done':
       case 'completed':
         return {
           bg: 'from-emerald-500/10 via-green-500/5 to-teal-500/10',
@@ -34,7 +30,8 @@ export default function GoalCard({ goal, index, onEditGoal, onDeleteGoal, deleti
           glow: 'shadow-emerald-500/20',
           icon: <CheckCircle className="h-4 w-4" />
         };
-      case 'inProgress':
+      case 'inprogress':
+      case 'in-progress':
         return {
           bg: 'from-blue-500/10 via-cyan-500/5 to-indigo-500/10',
           border: 'border-blue-500/30',
@@ -50,6 +47,14 @@ export default function GoalCard({ goal, index, onEditGoal, onDeleteGoal, deleti
           glow: 'shadow-amber-500/20',
           icon: <AlertCircle className="h-4 w-4" />
         };
+      case 'review':
+        return {
+          bg: 'from-purple-500/10 via-violet-500/5 to-fuchsia-500/10',
+          border: 'border-purple-500/30',
+          text: 'text-purple-400',
+          glow: 'shadow-purple-500/20',
+          icon: <AlertCircle className="h-4 w-4" />
+        };
       default: // todo
         return {
           bg: 'from-purple-500/10 via-violet-500/5 to-fuchsia-500/10',
@@ -62,12 +67,23 @@ export default function GoalCard({ goal, index, onEditGoal, onDeleteGoal, deleti
   };
 
   const statusTheme = getStatusTheme();
-  const formattedStatus = {
-    'todo': 'To Do',
-    'inProgress': 'In Progress',
-    'testing': 'Testing',
-    'completed': 'Completed'
-  }[goal.status] || goal.status;
+  
+  const getStatusDisplayName = (status: Status | string) => {
+    const statusName = typeof status === 'string' ? status : status?.name || 'todo';
+    
+    switch (statusName.toLowerCase()) {
+      case 'todo': return 'To Do';
+      case 'inprogress': return 'In Progress';
+      case 'in-progress': return 'In Progress';
+      case 'testing': return 'Testing';
+      case 'review': return 'Review';
+      case 'done': return 'Done';
+      case 'completed': return 'Completed';
+      default: return statusName.charAt(0).toUpperCase() + statusName.slice(1);
+    }
+  };
+  
+  const formattedStatus = getStatusDisplayName(goal.status || 'todo');
 
   return (
     <div

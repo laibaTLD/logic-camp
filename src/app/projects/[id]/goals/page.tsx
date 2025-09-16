@@ -12,7 +12,7 @@ export default async function ProjectGoalsPage({ params }: { params: Promise<{ i
     notFound();
   }
   
-  const goals = await getGoalsByProject(projectId);
+  const goals = await getGoalsByProjectId(projectId);
   
   return (
     <div className="min-h-screen bg-[#0b0b10] text-white p-8">

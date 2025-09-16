@@ -14,8 +14,8 @@ interface EditProjectModalProps {
 export default function EditProjectModal({ project, isOpen, onClose, onSave }: EditProjectModalProps) {
   const { teams } = useAdminData();
   const [form, setForm] = useState({
-    name: project.name,
-    description: project.description || "",
+    name: project?.name || "",
+    description: project?.description || "",
     teamId: "",
   });
   const [loading, setLoading] = useState(false);
@@ -33,7 +33,7 @@ export default function EditProjectModal({ project, isOpen, onClose, onSave }: E
     }
   }, [isOpen, project]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !project) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +76,7 @@ export default function EditProjectModal({ project, isOpen, onClose, onSave }: E
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-300 hover:text-white">
           <X className="h-5 w-5" />
         </button>
-        <h2 className="text-xl font-semibold text-white mb-4">Edit Project</h2>
+        <h2 className="text-lg font-semibold text-white mb-3">Edit Project</h2>
 
         {error && <p className="text-red-500 mb-2">{error}</p>}
 

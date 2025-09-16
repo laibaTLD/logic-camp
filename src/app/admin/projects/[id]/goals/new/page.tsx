@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { createGoal } from '@/services/goalService';
 
-export default function NewGoalPage({ params }: { params: { id: string } }) {
+export default function NewGoalPage() {
   const router = useRouter();
+  const params = useParams();
   const projectId = Number(params.id);
   
   const [formData, setFormData] = useState({
@@ -27,6 +28,8 @@ export default function NewGoalPage({ params }: { params: { id: string } }) {
         description: formData.description,
         deadline: formData.deadline || undefined,
         projectId,
+        completed: false,
+        status: 'todo',
       });
       router.push(`/admin/projects/${projectId}/goals`);
     } catch (error) {

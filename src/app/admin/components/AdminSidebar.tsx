@@ -5,8 +5,13 @@ import {
   Users, 
   UsersRound, 
   FolderOpen, 
-  BarChart3
+  BarChart3,
+  FlaskConical,
+  Archive,
+  Settings,
+  Target
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface AdminSidebarProps {
   activeSection: string;
@@ -17,6 +22,7 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ activeSection, onSectionChange, onCreateTeam, onCreateProject }: AdminSidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const router = useRouter();
 
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, description: 'Overview & Stats' },
@@ -61,20 +67,20 @@ export default function AdminSidebar({ activeSection, onSectionChange, onCreateT
         isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
       {/* Sidebar Header */}
-      <div className="p-6 border-b border-slate-700/50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl flex items-center justify-center">
-            <BarChart3 className="w-6 h-6 text-white" />
+      <div className="p-4 border-b border-slate-700/50">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-lg flex items-center justify-center">
+            <BarChart3 className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">Admin Panel</h2>
-            <p className="text-sm text-slate-400">Management Dashboard</p>
+            <h2 className="text-sm font-bold text-white">Admin Panel</h2>
+            <p className="text-xs text-slate-400">Management Dashboard</p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="p-4 space-y-2">
+      <nav className="p-3 space-y-1">
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeSection === item.id;
@@ -84,17 +90,17 @@ export default function AdminSidebar({ activeSection, onSectionChange, onCreateT
               {/* Main Navigation Item */}
               <button
                 onClick={() => handleSectionClick(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 active:scale-[0.98] transform ${
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 active:scale-[0.98] transform ${
                   isActive
                     ? 'bg-gradient-to-r from-purple-600/20 to-cyan-600/20 border border-purple-500/30 text-white shadow-lg shadow-purple-500/20 scale-[1.02]'
                     : 'text-slate-300 hover:bg-slate-700/50 hover:text-white border border-transparent hover:border-slate-600/50 hover:scale-[1.02] hover:shadow-md hover:shadow-slate-500/10'
                 }`}
               >
-                <Icon className={`w-5 h-5 transition-colors ${
+                <Icon className={`w-4 h-4 transition-colors ${
                   isActive ? 'text-purple-400' : 'text-slate-400 group-hover:text-slate-300'
                 }`} />
                 <div className="flex-1">
-                  <div className="font-medium">{item.label}</div>
+                  <div className="font-medium text-sm">{item.label}</div>
                   <div className="text-xs text-slate-500 group-hover:text-slate-400">
                     {item.description}
                   </div>
@@ -103,6 +109,26 @@ export default function AdminSidebar({ activeSection, onSectionChange, onCreateT
                   <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.6)]" />
                 )}
               </button>
+
+              {/* Nested items under Projects */}
+              {item.id === 'projects' && (
+                <div className="ml-8 mt-1 space-y-1">
+                  <button
+                    onClick={() => { onSectionChange('projects-testing'); setIsMobileOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-slate-300 hover:bg-slate-700/40 hover:text-white transition-colors border border-transparent hover:border-slate-600/40"
+                  >
+                    <FlaskConical className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm">Testing Projects</span>
+                  </button>
+                  <button
+                    onClick={() => { onSectionChange('projects-archived'); setIsMobileOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-slate-300 hover:bg-slate-700/40 hover:text-white transition-colors border border-transparent hover:border-slate-600/40"
+                  >
+                    <Archive className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm">Archived Projects</span>
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}

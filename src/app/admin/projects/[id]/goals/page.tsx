@@ -1,23 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { getGoalsByProject } from '@/services/goalService';
 import { getProjectById } from '@/services/projectService';
 import { Plus, ArrowLeft, CheckCircle, Clock } from 'lucide-react';
 import { formatDate } from '@/utils/helpers';
+import { Goal } from '@/types';
 
-interface Goal {
-  id: number;
-  title: string;
-  description?: string;
-  deadline?: string;
-  completed: boolean;
-  projectId: number;
-}
-
-export default function GoalsPage({ params }: { params: { id: string } }) {
+export default function GoalsPage() {
   const router = useRouter();
+  const params = useParams();
   const projectId = Number(params.id);
   
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -44,11 +37,11 @@ export default function GoalsPage({ params }: { params: { id: string } }) {
   }, [projectId]);
 
   // Calculate remaining days until deadline
-  const getRemainingDays = (deadline?: string) => {
+  const getRemainingDays = (deadline?: string | Date) => {
     if (!deadline) return null;
     
     const today = new Date();
-    const deadlineDate = new Date(deadline);
+    const deadlineDate = deadline instanceof Date ? deadline : new Date(deadline);
     const diffTime = deadlineDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
@@ -111,9 +104,13 @@ export default function GoalsPage({ params }: { params: { id: string } }) {
               >
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="font-semibold text-lg text-white">{goal.title}</h3>
-                  <div className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${goal.completed ? 'bg-green-400/20 text-green-300' : 'bg-blue-400/20 text-blue-300'}`}>
+                  <div className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${
+                    goal.status_title === 'done' || goal.status_title === 'completed' 
+                      ? 'bg-green-400/20 text-green-300' 
+                      : 'bg-blue-400/20 text-blue-300'
+                  }`}>
                     <CheckCircle className="h-3 w-3" />
-                    {goal.completed ? 'Completed' : 'In Progress'}
+                    {goal.status_title === 'done' || goal.status_title === 'completed' ? 'Completed' : 'In Progress'}
                   </div>
                 </div>
                 
@@ -125,13 +122,13 @@ export default function GoalsPage({ params }: { params: { id: string } }) {
                   <div className="flex items-center gap-2 text-xs mt-4">
                     <Clock className="h-3 w-3 text-yellow-400" />
                     <span className="text-yellow-300">
-                      {getRemainingDays(goal.deadline) !== null ? (
-                        getRemainingDays(goal.deadline)! > 0 ? 
-                          `${getRemainingDays(goal.deadline)} days remaining` : 
-                          getRemainingDays(goal.deadline) === 0 ? 
-                            "Due today" : 
-                            `${Math.abs(getRemainingDays(goal.deadline)!)} days overdue`
-                      ) : "No deadline"}
+                      {(() => {
+                        const remainingDays = getRemainingDays(goal.deadline);
+                        if (remainingDays === null) return "No deadline";
+                        if (remainingDays > 0) return `${remainingDays} days remaining`;
+                        if (remainingDays === 0) return "Due today";
+                        return `${Math.abs(remainingDays)} days overdue`;
+                      })()}
                     </span>
                   </div>
                 )}

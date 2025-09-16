@@ -44,7 +44,7 @@ export default function DeleteConfirmationModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-label={title}>
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -52,13 +52,13 @@ export default function DeleteConfirmationModal({
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-md mx-4 animate-in fade-in-0 zoom-in-95 duration-200">
-        <div className="relative rounded-2xl bg-gradient-to-br from-slate-800/95 to-slate-900/95 border border-red-500/20 backdrop-blur-xl shadow-[0_20px_60px_rgba(239,68,68,0.15)]">
+      <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg mx-auto animate-in fade-in-0 zoom-in-95 duration-200">
+        <div className="relative rounded-2xl bg-gradient-to-br from-slate-800/95 to-slate-900/95 border border-red-500/20 backdrop-blur-xl shadow-[0_20px_60px_rgba(239,68,68,0.15)] max-h-[90vh] overflow-auto">
           {/* Ambient gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-red-600/5 rounded-2xl" />
           
           {/* Header */}
-          <div className="relative z-10 flex items-center justify-between p-6 border-b border-red-500/20">
+          <div className="relative z-10 flex items-center justify-between p-5 sm:p-6 border-b border-red-500/20">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
                 <AlertTriangle className="h-5 w-5 text-red-400" />
@@ -77,8 +77,8 @@ export default function DeleteConfirmationModal({
           </div>
           
           {/* Content */}
-          <div className="relative z-10 p-6">
-            <p className="text-white/80 mb-2">{message}</p>
+          <div className="relative z-10 p-5 sm:p-6">
+            <p className="text-white/80 mb-3">{message}</p>
             {itemName && (
               <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
                 <p className="text-sm text-red-300">
@@ -92,7 +92,7 @@ export default function DeleteConfirmationModal({
           </div>
           
           {/* Actions */}
-          <div className="relative z-10 flex items-center justify-end gap-3 p-6 border-t border-white/10">
+          <div className="relative z-10 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 p-5 sm:p-6 border-t border-white/10">
             <button
               onClick={onClose}
               disabled={isLoading}

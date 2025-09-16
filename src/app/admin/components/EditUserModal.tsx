@@ -76,7 +76,7 @@ export default function EditUserModal({ user, onClose, onSave }: EditUserModalPr
           <X size={20} />
         </button>
 
-        <h2 className="text-xl font-semibold mb-6">✏️ Edit User</h2>
+        <h2 className="text-lg font-semibold mb-4">✏️ Edit User</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}

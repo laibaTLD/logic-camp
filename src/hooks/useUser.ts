@@ -53,17 +53,23 @@ export function useUser() {
           credentials: 'include'
         });
 
+        const contentType = response.headers.get('content-type') || '';
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = contentType.includes('application/json') ? await response.json().catch(() => ({})) : {} as any;
           if (response.status === 403) {
             // Account pending approval - don't redirect to login
             setError(errorData.error || 'Account pending approval');
             return;
           }
+          // Fallback to text for non-JSON error pages
+          if (!contentType.includes('application/json')) {
+            const text = await response.text().catch(() => '');
+            throw new Error(text || 'Failed to fetch user data');
+          }
           throw new Error(errorData.error || 'Failed to fetch user data');
         }
 
-        const data = await response.json();
+        const data = contentType.includes('application/json') ? await response.json() : await Promise.reject(new Error('Expected JSON but received non-JSON response'));
         setUserData(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred');

@@ -7,7 +7,7 @@ type TaskAssignee = {
   email: string;
 };
 
-export type Task = {
+type Task = {
   id: number;
   title: string;
   description?: string;

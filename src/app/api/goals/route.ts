@@ -6,7 +6,7 @@ import { authenticateUser } from '@/lib/auth';
 const createSchema = z.object({
   title: z.string().min(1).max(150),
   description: z.string().optional(),
-  status: z.enum(['todo','inProgress','testing','completed']).optional(),
+  statusTitle: z.string().optional(),
   projectId: z.number(),
   deadline: z.string().optional(),
 });
@@ -22,7 +22,13 @@ export async function GET(req: NextRequest) {
     const where: any = {};
     if (projectId) where.project_id = parseInt(projectId);
 
-    const goals = await Goal.findAll({ where, order: [['createdAt','DESC']], include: [{ model: Project, as: 'project' }] as any });
+    const goals = await Goal.findAll({ 
+      where, 
+      order: [['createdAt','DESC']], 
+      include: [
+        { model: Project, as: 'project' }
+      ] as any 
+    });
     return NextResponse.json({ goals });
   } catch (err) {
     console.error('Fetch goals error:', err);
@@ -42,10 +48,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.issues }, { status: 400 });
     }
 
+    // Set default status if not provided
+    const finalStatusTitle = parsed.data.statusTitle || 'todo';
+    
+    // Default statuses for new goals (unified set)
+    const defaultStatuses = [
+      { id: 1, title: 'todo', description: 'Item is pending', color: '#6B7280', isDeletable: true },
+      { id: 2, title: 'inProgress', description: 'Item is in progress', color: '#3B82F6', isDeletable: true },
+      { id: 3, title: 'testing', description: 'Item is being tested', color: '#F59E0B', isDeletable: false },
+      { id: 4, title: 'done', description: 'Item is completed', color: '#10B981', isDeletable: false }
+    ];
+
     const goal = await Goal.create({
       title: parsed.data.title,
       description: parsed.data.description ?? null,
-      status: parsed.data.status ?? 'todo',
+      statuses: defaultStatuses,
+      status_title: finalStatusTitle,
       project_id: parsed.data.projectId,
       deadline: parsed.data.deadline ?? null,
     } as any);

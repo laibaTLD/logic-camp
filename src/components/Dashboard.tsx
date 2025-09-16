@@ -2,6 +2,12 @@
 import React from 'react';
 import Header from '@/components/Header';
 import ProjectsSection from '@/components/ProjectsSection';
+import TasksSection from '@/components/TasksSection';
+import TaskComments from '@/components/TaskComments';
+import { useEffect, useState } from 'react';
+import { getProjects } from '@/services/projectService';
+import { getGoalsByProject } from '@/services/goalService';
+import { getTasksByGoal } from '@/services/taskService';
 
 import { UserAttributes } from '@/models/User';
 import { ProjectAttributes } from '@/models/Project';
@@ -15,7 +21,46 @@ type DashboardProps = {
 };
 
 export default function Dashboard({ userData }: DashboardProps) {
-  
+  const [projects, setProjects] = useState<any[]>(userData.projects || []);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [goals, setGoals] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        // If userData had no projects, fetch
+        if (!projects || projects.length === 0) {
+          const p = await getProjects();
+          setProjects(p);
+        }
+      } catch {}
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
+    const loadGoalsAndTasks = async () => {
+      if (!selectedProjectId) return;
+      try {
+        const g = await getGoalsByProject(selectedProjectId);
+        setGoals(g);
+        // Flatten tasks for all goals
+        const allTasks: any[] = [];
+        for (const goal of g) {
+          try {
+            const t = await getTasksByGoal(goal.id);
+            // API returns { tasks }, normalize
+            const normalized = (t.tasks ?? t) as any[];
+            allTasks.push(...normalized);
+          } catch {}
+        }
+        setTasks(allTasks);
+      } catch {}
+    };
+    loadGoalsAndTasks();
+  }, [selectedProjectId]);
+
   return (
     <div className="relative min-h-screen bg-[#0b0b10] text-white overflow-hidden">
       {/* Ambient gradient blobs */}
@@ -30,8 +75,35 @@ export default function Dashboard({ userData }: DashboardProps) {
               📂 My Projects
             </h2>
           </div>
-          <ProjectsSection projects={userData.projects || []} />
+          <div onClick={() => {}}>
+            <ProjectsSection projects={projects} />
+          </div>
+          {/* Simple selector for demo: pick first project automatically */}
+          {!selectedProjectId && projects.length > 0 && (
+            <div className="mt-4">
+              <button onClick={() => setSelectedProjectId(projects[0].id)} className="px-3 py-2 bg-white/10 border border-white/10 rounded-lg">
+                View {projects[0].name} details
+              </button>
+            </div>
+          )}
         </section>
+
+        {selectedProjectId && (
+          <section className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl p-6">
+              <h3 className="text-lg font-semibold mb-4">Tasks</h3>
+              <TasksSection tasks={tasks as any} />
+            </div>
+            <div className="rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl p-6">
+              <h3 className="text-lg font-semibold mb-4">Task Comments (first task)</h3>
+              {tasks.length > 0 ? (
+                <TaskComments taskId={tasks[0].id} />
+              ) : (
+                <div className="text-sm text-gray-300">No tasks yet.</div>
+              )}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );

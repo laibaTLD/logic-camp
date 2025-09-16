@@ -1,6 +1,6 @@
 import React from 'react';
 import { ProjectAttributes } from '@/models/Project';
-import ProjectCard from '@/components/ProjectCard';
+import UserProjectCard from '@/components/UserProjectCard';
 
 type ProjectsSectionProps = {
   projects: ProjectAttributes[];
@@ -13,7 +13,14 @@ export default function ProjectsSection({ projects }: ProjectsSectionProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {projects.length > 0 ? (
           projects.map((project) => (
-            <ProjectCard key={project.id} project={{...project, description: project.description || ''}} />
+            <UserProjectCard
+              key={project.id}
+              id={project.id}
+              name={project.name}
+              description={project.description || ''}
+              endDate={(project as any).end_date || (project as any).endDate || undefined}
+              membersCount={Array.isArray((project as any).members) ? (project as any).members.length : undefined}
+            />
           ))
         ) : (
           <p className="text-gray-700 dark:text-gray-300">No projects assigned.</p>

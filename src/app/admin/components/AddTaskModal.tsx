@@ -83,7 +83,7 @@ export default function AddTaskModal({ isOpen, onClose, goalId, onTaskAdded }: A
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-[#1a1a24] rounded-lg p-6 w-full max-w-md mx-4 border border-gray-700">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-white">Add New Task</h2>
+          <h2 className="text-lg font-semibold text-white">Add New Task</h2>
           <button
             onClick={handleClose}
             className="text-gray-400 hover:text-white transition-colors"

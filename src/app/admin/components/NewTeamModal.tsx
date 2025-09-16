@@ -101,7 +101,7 @@ export default function NewTeamModal({ isOpen, onClose, users, createTeam }: New
           <div className="p-2 rounded-lg bg-indigo-500/20 border border-indigo-500/30">
             <Users className="h-5 w-5 text-indigo-400" />
           </div>
-          <h2 className="text-xl font-semibold text-white">Create New Team</h2>
+          <h2 className="text-lg font-semibold text-white">Create New Team</h2>
         </div>
 
         {error && <p className="text-red-500 mb-2">{error}</p>}

@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { createGoal } from '@/services/goalService';
 import Link from 'next/link';
 
-export default function NewGoalPage({ params }: { params: { id: string } }) {
+export default function NewGoalPage() {
   const router = useRouter();
+  const params = useParams();
   const projectId = Number(params.id);
   
   const [formData, setFormData] = useState({

@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from '../../components/ui/use-toast';
 import UserProfile from '../../components/UserProfile';
-import UserPreferences from '../../components/UserPreferences';
 import UserActivityLog from '../../components/UserActivityLog';
 
 interface User {
@@ -31,7 +30,7 @@ const UsersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [activeModal, setActiveModal] = useState<'profile' | 'preferences' | 'activity' | null>(null);
+  const [activeModal, setActiveModal] = useState<'profile' | 'activity' | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -197,12 +196,6 @@ const UsersPage: React.FC = () => {
               className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium px-4 py-2 rounded-xl transition-all duration-200"
             >
               My Profile
-            </button>
-            <button
-              onClick={() => setActiveModal('preferences')}
-              className="bg-white/10 hover:bg-white/20 text-white font-medium px-4 py-2 rounded-xl transition-all duration-200"
-            >
-              Preferences
             </button>
             <button
               onClick={() => setActiveModal('activity')}
@@ -436,13 +429,6 @@ const UsersPage: React.FC = () => {
         </div>
       )}
 
-      {activeModal === 'preferences' && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <UserPreferences onClose={() => setActiveModal(null)} />
-          </div>
-        </div>
-      )}
 
       {activeModal === 'activity' && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">

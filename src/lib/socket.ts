@@ -14,6 +14,12 @@ export function initIO(server: any) {
         console.log(`User joined project ${projectId}`);
       });
 
+      // Join a task room to receive realtime task comment updates
+      socket.on('joinTask', (taskId: string) => {
+        socket.join(`task_${taskId}`);
+        console.log(`User joined task ${taskId}`);
+      });
+
       socket.on('disconnect', () => {
         console.log('Client disconnected');
       });

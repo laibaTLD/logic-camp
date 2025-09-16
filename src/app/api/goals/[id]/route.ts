@@ -6,7 +6,7 @@ import { authenticateUser } from '@/lib/auth';
 const updateSchema = z.object({
   title: z.string().min(1).max(150).optional(),
   description: z.string().optional(),
-  status: z.enum(['todo','inProgress','testing','completed']).optional(),
+  statusTitle: z.string().optional(),
   deadline: z.string().optional(),
 });
 
@@ -26,7 +26,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!parsed.success) return NextResponse.json({ error: 'Validation failed', details: parsed.error.issues }, { status: 400 });
 
     await goal.update({
-      ...parsed.data,
+      title: parsed.data.title ?? (goal as any).title,
+      description: parsed.data.description ?? (goal as any).description,
+      status_title: parsed.data.statusTitle ?? (goal as any).status_title,
       deadline: parsed.data.deadline ?? (goal as any).deadline,
     } as any);
     return NextResponse.json({ goal });

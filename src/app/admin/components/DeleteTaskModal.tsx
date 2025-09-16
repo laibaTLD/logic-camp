@@ -45,7 +45,7 @@ export default function DeleteTaskModal({
             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center">
               <AlertTriangle className="h-5 w-5 text-red-400" />
             </div>
-            <h2 className="text-xl font-semibold text-white">Delete Task</h2>
+            <h2 className="text-lg font-semibold text-white">Delete Task</h2>
           </div>
           <button
             onClick={onClose}

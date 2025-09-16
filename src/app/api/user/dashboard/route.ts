@@ -9,12 +9,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { User, Project, Task, Notification } = await getModels();
+    const { User, Task } = await getModels();
     const user = await User.findByPk(authResult.user.userId, {
       include: [
-        { model: Project, as: 'projects' },
+        // Only include associations that are defined in model setup
         { model: Task, as: 'assignedTasks' },
-        { model: Notification, as: 'notifications' }
       ],
       attributes: { exclude: ['password'] }
     });
@@ -23,8 +22,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Check if user is approved
-    if (!user.isApproved) {
+    // Check if user is approved (field is is_approved in the model)
+    if (!user.is_approved) {
       return NextResponse.json({ error: 'Account pending approval. Please contact an administrator.' }, { status: 403 });
     }
 

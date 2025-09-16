@@ -46,7 +46,7 @@ export default function ConfirmDeleteModal({
         </div>
 
         {/* Title */}
-        <h2 className="text-xl font-semibold text-center mb-2">{title}</h2>
+        <h2 className="text-lg font-semibold text-center mb-2">{title}</h2>
 
         {/* Message */}
         <p className="text-gray-300 text-center mb-6">{message}</p>

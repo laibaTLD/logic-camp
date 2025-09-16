@@ -24,8 +24,13 @@ export async function GET(req: NextRequest) {
           model: Team, 
           as: 'team',
           include: [
-            { model: User, as: 'members' }
+            { model: User, as: 'members', attributes: { exclude: ['password'] } }
           ] 
+        },
+        {
+          model: User,
+          as: 'owner',
+          attributes: ['id','name','email','role','createdAt']
         }
       ]
     });
@@ -50,7 +55,7 @@ export async function POST(req: NextRequest) {
     const user = { id: authResult.user.userId, email: authResult.user.email, role: authResult.user.role };
 
     // 2️⃣ Parse request as FormData or JSON
-    let name, description, status, teamId, startDate, endDate, file;
+    let name, description, statusTitle, teamId, startDate, endDate, file, customStatuses;
     
     // Check if the request is multipart form data
     const contentType = req.headers.get('content-type') || '';
@@ -58,11 +63,24 @@ export async function POST(req: NextRequest) {
       const formData = await req.formData();
       name = formData.get('name') as string;
       description = formData.get('description') as string;
-      status = formData.get('status') as string || 'todo';
+      statusTitle = formData.get('status') as string; // Changed from 'statusTitle' to 'status'
       teamId = formData.get('teamId') as string;
       startDate = formData.get('startDate') as string;
       endDate = formData.get('endDate') as string;
       file = formData.get('file') as File | null;
+      
+      // Parse custom statuses if provided
+      const customStatusesStr = formData.get('customStatuses') as string;
+      if (customStatusesStr) {
+        try {
+          customStatuses = JSON.parse(customStatusesStr);
+        } catch (error) {
+          console.error('Failed to parse custom statuses:', error);
+          customStatuses = [];
+        }
+      } else {
+        customStatuses = [];
+      }
       
       // Validate file size (5MB limit)
       if (file && file.size > 5 * 1024 * 1024) {
@@ -71,7 +89,7 @@ export async function POST(req: NextRequest) {
     } else {
       // Parse as JSON
       const body = await req.json();
-      ({ name, description, status = "todo", teamId, startDate, endDate } = body);
+      ({ name, description, statusTitle, teamId, startDate, endDate, customStatuses } = body);
     }
 
     if (!name) return NextResponse.json({ error: "Project name is required" }, { status: 400 });
@@ -79,6 +97,24 @@ export async function POST(req: NextRequest) {
 
     const models = await getModels();
     const { Project, Team } = models;
+
+    // Set default status if not provided
+    const finalStatusTitle = statusTitle || 'planning';
+    
+    // Default statuses for projects
+    const defaultStatuses = [
+      { id: 1, title: 'planning', description: 'Project is in planning phase', color: '#6B7280' },
+      { id: 2, title: 'active', description: 'Project is actively being worked on', color: '#3B82F6' },
+      { id: 3, title: 'on-hold', description: 'Project is temporarily paused', color: '#F59E0B' },
+      { id: 4, title: 'completed', description: 'Project has been completed', color: '#10B981' },
+      { id: 5, title: 'cancelled', description: 'Project has been cancelled', color: '#EF4444' }
+    ];
+
+    // If caller provided custom statuses, treat them as authoritative.
+    // Otherwise, fall back to defaults.
+    const allStatuses = Array.isArray(customStatuses) && customStatuses.length > 0
+      ? customStatuses
+      : defaultStatuses;
 
     // Start a transaction for atomicity
     const transaction = await models.sequelize.transaction();
@@ -123,7 +159,8 @@ export async function POST(req: NextRequest) {
       const newProject = await Project.create({
         name,
         description,
-        status,
+        statuses: allStatuses,
+        status_title: finalStatusTitle,
         start_date: parsedStart,
         end_date: parsedEnd,
         files: fileData,

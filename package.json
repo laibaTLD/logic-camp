@@ -10,9 +10,15 @@
     "db:init": "tsx src/lib/init-db.ts",
     "db:seed": "tsx src/lib/seed-db.ts",
     "db:reset": "pnpm run db:init && pnpm run db:seed",
-    "test:db": "tsx test-db.ts"
+    "test:db": "tsx test-db.ts",
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:migrate:undo": "sequelize-cli db:migrate:undo",
+    "db:migrate:status": "sequelize-cli db:migrate:status",
+    "db:migrate:create": "sequelize-cli migration:generate --name",
+    "db:run": "tsx src/scripts/run-migrations.ts"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.87.4",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",

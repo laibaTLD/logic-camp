@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import ProjectCard from "./ProjectCard";
@@ -10,57 +10,60 @@ import DeleteProjectModal from "./DeleteProjectModal";
 interface ProjectsGridProps {
   projects: any[];
   loadingProjects: boolean;
-  editProject: (projectId: number, projectData: any) => Promise<void>;
+  editProject: (project: any) => void;
   deleteProject: (projectId: number) => Promise<void>;
-  // Removed addTaskToProject since tasks are now managed under goals
+  // Server-side pagination props
+  page?: number;
+  total?: number;
+  totalPages?: number;
+  onChangePage?: (page: number) => void;
+  search?: string;
+  onChangeSearch?: (q: string) => void;
+  perPage?: number;
 }
 
-export default function ProjectsGrid({ projects, loadingProjects, editProject, deleteProject }: ProjectsGridProps) {
+export default function ProjectsGrid({ projects, loadingProjects, editProject, deleteProject, page = 1, total = 0, totalPages = 1, onChangePage, search = "", onChangeSearch, perPage = 2 }: ProjectsGridProps) {
   const router = useRouter();
 
   const [deleteProjectModal, setDeleteProjectModal] = useState<{ isOpen: boolean; project: any | null }>({ isOpen: false, project: null });
   // Removed task-related state since tasks are now managed under goals
   const [message, setMessage] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const projectsPerPage = 2;
+  const [searchQuery, setSearchQuery] = useState(search);
 
-  // Filter projects based on search query
-  const filteredProjects = projects.filter(project =>
-    project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  // Pagination calculations
-  const totalProjects = filteredProjects.length;
-  const totalPages = Math.ceil(totalProjects / projectsPerPage);
-  const startIndex = (currentPage - 1) * projectsPerPage;
-  const endIndex = startIndex + projectsPerPage;
-  const currentProjects = filteredProjects.slice(startIndex, endIndex);
-
-  // Reset to first page when search query changes
+  // Keep latest callback in a ref to avoid effect re-runs on parent re-render
+  const onChangeSearchRef = useRef<ProjectsGridProps["onChangeSearch"]>(undefined);
   useEffect(() => {
-    setCurrentPage(1);
+    onChangeSearchRef.current = onChangeSearch;
+  }, [onChangeSearch]);
+
+  // Track last dispatched value to avoid duplicate fetches
+  const lastSentRef = useRef<string>("__init__");
+
+  // Debounce search updates to parent (only when value actually changes)
+  useEffect(() => {
+    const value = searchQuery.trim();
+    if (value === lastSentRef.current) {
+      return; // no change, skip scheduling
+    }
+    const handle = setTimeout(() => {
+      if (onChangeSearchRef.current) {
+        lastSentRef.current = value;
+        onChangeSearchRef.current(value);
+      }
+    }, 300);
+    return () => clearTimeout(handle);
   }, [searchQuery]);
 
-  // Adjust current page if it exceeds total pages
+  // Sync incoming search prop to local state without causing loops
   useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(1);
+    const incoming = (search || "").trim();
+    if (incoming !== searchQuery) {
+      setSearchQuery(incoming);
     }
-  }, [currentPage, totalPages]);
+    // intentionally ignore searchQuery in deps to avoid feedback loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
-  // Removed task loading useEffect since tasks are now managed under goals
-
-  const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
-
-  // ---------------------
-  // Handlers (use hook)
-  // ---------------------
   const handleOpenDeleteProject = (project: any) => {
     setDeleteProjectModal({ isOpen: true, project });
   };
@@ -73,10 +76,8 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
     }
   };
 
-  // Removed task-related functions since tasks are now managed under goals
-
   return (
-    <div>
+    <div className="w-full overflow-hidden">
 
       {/* Feedback message */}
       {message && (
@@ -89,7 +90,7 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
       <div className="flex items-center justify-between mb-6">
         <div>
           <p className="text-sm text-slate-400">
-            {totalProjects > 0 ? `${totalProjects} ${searchQuery ? 'filtered' : 'total'} projects` : 'No projects yet'}
+            {total > 0 ? `${total} ${searchQuery ? 'filtered' : 'total'} projects` : 'No projects yet'}
           </p>
         </div>
         
@@ -97,7 +98,7 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
         {totalPages > 1 && (
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-600/50">
             <span className="text-xs text-slate-400">Page</span>
-            <span className="text-sm font-semibold text-white">{currentPage}</span>
+            <span className="text-sm font-semibold text-white">{page}</span>
             <span className="text-xs text-slate-400">of {totalPages}</span>
           </div>
         )}
@@ -120,7 +121,7 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
       </div>
 
       {/* Project grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(24rem,1fr))] gap-4 lg:gap-5">
         {loadingProjects ? (
           [...Array(3)].map((_, i) => (
             <div
@@ -128,7 +129,7 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
               className="h-44 rounded-2xl bg-white/5 border border-white/10 animate-pulse"
             />
           ))
-        ) : filteredProjects.length === 0 ? (
+        ) : projects.length === 0 ? (
           <div className="text-center col-span-full mt-4">
             {searchQuery ? (
               <div>
@@ -149,12 +150,13 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
             )}
           </div>
         ) : (
-          currentProjects.map((project, idx) => (
+          projects.map((project, idx) => (
             <ProjectCard
               key={project.id}
               project={project}
-              index={startIndex + idx}
+              index={(page - 1) * perPage + idx}
               onOpenProject={() => handleOpenDeleteProject(project)}
+              onEditProject={() => editProject(project)}
             />
           ))
         )}
@@ -166,18 +168,18 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
           <div className="flex items-center gap-2 text-sm text-slate-400">
             <span>Showing</span>
             <span className="font-semibold text-white">
-              {startIndex + 1}-{Math.min(endIndex, totalProjects)}
+              {(page - 1) * perPage + (projects.length > 0 ? 1 : 0)}-{(page - 1) * perPage + projects.length}
             </span>
             <span>of</span>
-            <span className="font-semibold text-white">{totalProjects}</span>
+            <span className="font-semibold text-white">{total}</span>
             <span>projects</span>
           </div>
           
           <div className="flex items-center gap-2">
             {/* Previous button */}
             <button
-              onClick={() => goToPage(currentPage - 1)}
-              disabled={currentPage <= 1}
+              onClick={() => onChangePage && onChangePage(page - 1)}
+              disabled={page <= 1}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-600/50 bg-slate-800/60 text-sm font-medium text-white hover:bg-slate-700/60 hover:border-slate-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-800/60 transition-all"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,20 +194,20 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
                 let pageNum;
                 if (totalPages <= 5) {
                   pageNum = i + 1;
-                } else if (currentPage <= 3) {
+                } else if (page <= 3) {
                   pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
+                } else if (page >= totalPages - 2) {
                   pageNum = totalPages - 4 + i;
                 } else {
-                  pageNum = currentPage - 2 + i;
+                  pageNum = page - 2 + i;
                 }
                 
                 return (
                   <button
                     key={pageNum}
-                    onClick={() => goToPage(pageNum)}
+                    onClick={() => onChangePage && onChangePage(pageNum)}
                     className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
-                      pageNum === currentPage
+                      pageNum === page
                         ? 'bg-gradient-to-r from-purple-600 to-cyan-600 text-white border border-purple-500/50 shadow-lg'
                         : 'border border-slate-600/50 bg-slate-800/60 text-slate-300 hover:bg-slate-700/60 hover:border-slate-500/50'
                     }`}
@@ -218,8 +220,8 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
             
             {/* Next button */}
             <button
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={currentPage >= totalPages}
+              onClick={() => onChangePage && onChangePage(page + 1)}
+              disabled={page >= totalPages}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-600/50 bg-slate-800/60 text-sm font-medium text-white hover:bg-slate-700/60 hover:border-slate-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-800/60 transition-all"
             >
               Next

@@ -85,7 +85,7 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-300 hover:text-white">
           <X className="h-5 w-5" />
         </button>
-        <h2 className="text-xl font-semibold text-white mb-4">Create New Project</h2>
+        <h2 className="text-lg font-semibold text-white mb-3">Create New Project</h2>
 
         {error && <p className="text-red-500 mb-2">{error}</p>}
 

@@ -4,9 +4,9 @@ import React from 'react';
 import TaskCard, { Task } from './TaskCard';
 
 export interface TaskGridProps {
-  tasks: Task[];
+  tasks: any[];
   loadingTasks?: boolean;
-  onEditTask?: (task: Task) => void;
+  onEditTask?: (task: any) => void;
   onDeleteTask?: (taskId: number) => void;
   deletingTaskId?: number;
 }

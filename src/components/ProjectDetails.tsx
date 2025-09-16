@@ -2,11 +2,15 @@
 
 import React, { useState } from 'react';
 import ProjectChat from '@/app/user/components/ProjectChat';
+import { useUser } from '@/lib/context/UserContext';
 import { updateProjectStatus } from '@/services/projectService';
 import { formatDate } from '@/utils/helpers';
 import { ProjectAttributes } from '@/models/Project';
+import ProjectGoalsNested from '@/components/ProjectGoalsNested';
 
 // Using standard HTML elements instead of missing UI components
+
+import { Project as BaseProject } from '@/types';
 
 interface Project extends ProjectAttributes {
   // Add missing properties from service layer that might be used
@@ -17,50 +21,49 @@ interface ProjectDetailsProps {
   project: Project;
 }
 
-function getStatusColor(status: string) {
-  // Same as in modal
-  switch (status) {
-    case 'planning': return 'text-blue-400 bg-blue-400/10';
-    case 'active': return 'text-green-400 bg-green-400/10';
-    case 'on-hold': return 'text-yellow-400 bg-yellow-400/10';
+function getStatusColor(status: { title?: string; color?: string } | string) {
+  const statusName = typeof status === 'string' ? status : status?.title || 'todo';
+  
+  switch (statusName.toLowerCase()) {
+    case 'todo': return 'text-blue-400 bg-blue-400/10';
+    case 'inprogress': return 'text-green-400 bg-green-400/10';
+    case 'testing': return 'text-yellow-400 bg-yellow-400/10';
+    case 'review': return 'text-purple-400 bg-purple-400/10';
+    case 'done': return 'text-emerald-400 bg-emerald-400/10';
     case 'completed': return 'text-emerald-400 bg-emerald-400/10';
-    case 'cancelled': return 'text-red-400 bg-red-400/10';
     default: return 'text-gray-400 bg-gray-400/10';
   }
 }
 
+function getStatusDisplayName(status: { title?: string } | string) {
+  const statusName = typeof status === 'string' ? status : status?.title || 'todo';
+  
+  switch (statusName.toLowerCase()) {
+    case 'todo': return 'To Do';
+    case 'inprogress': return 'In Progress';
+    case 'testing': return 'Testing';
+    case 'review': return 'Review';
+    case 'done': return 'Done';
+    case 'completed': return 'Completed';
+    default: return statusName.charAt(0).toUpperCase() + statusName.slice(1);
+  }
+}
+
 export default function ProjectDetails({ project }: ProjectDetailsProps) {
-  // Convert model status to UI status for initial state
-  const getUiStatus = (modelStatus: string) => {
-    return reverseStatusMapping[modelStatus as keyof typeof reverseStatusMapping] || 'planning';
-  };
+  const { user } = useUser();
   
-  // Convert model status to UI status for display
-  const [projectStatus, setProjectStatus] = useState(getUiStatus(project.status));
-
-  // Map between UI status values and model status values
-  const statusMapping = {
-    'planning': 'todo',
-    'active': 'inProgress',
-    'on-hold': 'testing',
-    'completed': 'completed',
-    'cancelled': 'archived'
-  } as const;
+  // Get current status display name
+  const getCurrentStatusDisplay = () => getStatusDisplayName((project as any).status_title || 'todo');
   
-  const reverseStatusMapping = {
-    'todo': 'planning',
-    'inProgress': 'active',
-    'testing': 'on-hold',
-    'completed': 'completed',
-    'archived': 'cancelled'
-  } as const;
+  // Get current status for display
+  const [projectStatus, setProjectStatus] = useState(getCurrentStatusDisplay());
 
-  const handleProjectStatusChange = async (newUiStatus: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled') => {
+  const handleProjectStatusChange = async (newStatusTitle: string) => {
     try {
-      // Convert UI status to model status
-      const modelStatus = statusMapping[newUiStatus];
-      await updateProjectStatus(project.id, modelStatus);
-      setProjectStatus(newUiStatus); // Store UI status in state
+      await updateProjectStatus(project.id, newStatusTitle);
+      // Update local state - we'll need to fetch the updated project or status
+      // For now, just update the display
+      setProjectStatus(getCurrentStatusDisplay());
     } catch (error) {
       console.error('Failed to update project status', error);
     }
@@ -76,23 +79,19 @@ export default function ProjectDetails({ project }: ProjectDetailsProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="text-sm text-gray-400">Status</label>
-            <div className={`inline-flex px-3 py-1 rounded-full ${getStatusColor(projectStatus)}`}>
-              {projectStatus.charAt(0).toUpperCase() + projectStatus.slice(1)}
+            <div 
+              className={`inline-flex px-3 py-1 rounded-full ${getStatusColor((project as any).status_title || 'todo')}`}
+            >
+              {getStatusDisplayName((project as any).status_title || 'todo')}
             </div>
           </div>
           <div>
             <label className="text-sm text-gray-400">Update Status</label>
-            <select 
-              onChange={(e) => handleProjectStatusChange(e.target.value as 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled')}
-              defaultValue={projectStatus}
-              className="bg-gray-800 text-white border border-gray-600 rounded px-3 py-2"
-            >
-              <option value="planning">Planning</option>
-              <option value="active">Active</option>
-              <option value="on-hold">On Hold</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+            {(user?.role === 'admin' || user?.role === 'teamLead') ? (
+              <div className="text-gray-300">Status management coming soon</div>
+            ) : (
+              <div className="text-gray-300">View only</div>
+            )}
           </div>
           <div>
             <label className="text-sm text-gray-400">Start Date</label>
@@ -116,11 +115,7 @@ export default function ProjectDetails({ project }: ProjectDetailsProps) {
       {/* Goals */}
       <section className="bg-gray-900/90 border border-white/20 rounded-xl p-6 space-y-4">
         <h2 className="text-xl font-semibold text-white">Goals</h2>
-        <p className="text-gray-400">
-          <a href={`/projects/${project.id}/goals`} className="text-blue-400 hover:underline">
-            View and manage goals for this project
-          </a>
-        </p>
+        <ProjectGoalsNested projectId={project.id} teamId={(project as any).team_id || (project as any).teamId} />
       </section>
 
       {/* Chat */}

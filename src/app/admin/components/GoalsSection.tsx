@@ -1,17 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
-import GoalGrid from "../../../components/GoalGrid";
-
-interface Goal {
-  id: number;
-  title: string;
-  description?: string;
-  status: 'todo' | 'inProgress' | 'testing' | 'completed';
-  project_id: number;
-  deadline?: string;
-}
+import { Plus, Search } from "lucide-react";
+import GoalCard from "./GoalCard";
+import { Goal } from "@/types";
 
 interface GoalsSectionProps {
   onCreate: () => void;
@@ -22,6 +14,7 @@ export default function GoalsSection({ onCreate }: GoalsSectionProps) {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Goal | null>(null);
   const [deletingGoalId, setDeletingGoalId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchGoals = async () => {
@@ -43,7 +36,7 @@ export default function GoalsSection({ onCreate }: GoalsSectionProps) {
       body: JSON.stringify({
         title: updates.title,
         description: updates.description,
-        status: updates.status,
+        statusTitle: updates.status_title || updates.status,
         deadline: updates.deadline,
       })
     });
@@ -63,27 +56,94 @@ export default function GoalsSection({ onCreate }: GoalsSectionProps) {
     }
   };
 
+  // Filter goals based on search query
+  const filteredGoals = goals.filter(goal => 
+    goal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (goal.description && goal.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (goal.project?.name && goal.project.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">Goals</h2>
+        <h1 className="text-xl font-bold text-white">Goal Management</h1>
         <button
           onClick={onCreate}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm text-white shadow-md hover:shadow-lg hover:scale-[1.02] transition-all"
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm text-white shadow-md hover:shadow-lg hover:scale-[1.02] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
         >
           <Plus className="w-4 h-4" />
           Create Goal
         </button>
       </div>
 
-      <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-xl">
-        <GoalGrid 
-          goals={goals}
-          loadingGoals={loading}
-          onEditGoal={setEditing}
-          onDeleteGoal={deleteGoal}
-          deletingGoalId={deletingGoalId}
-        />
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-slate-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search goals..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="block w-full pl-10 pr-3 py-2.5 border border-slate-600/50 rounded-xl bg-slate-800/60 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors"
+          />
+        </div>
+      </div>
+
+      <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-3 sm:p-4 lg:p-6 backdrop-blur-xl overflow-hidden">
+        {/* Header with goal count */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="text-sm text-slate-400">
+              {goals.length > 0 ? `${filteredGoals.length} ${searchQuery ? 'filtered' : 'total'} goals` : 'No goals yet'}
+            </p>
+          </div>
+        </div>
+
+        {/* Goal grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(24rem,1fr))] gap-4 lg:gap-5">
+          {loading ? (
+            [...Array(3)].map((_, i) => (
+              <div
+                key={`s-${i}`}
+                className="h-44 rounded-2xl bg-white/5 border border-white/10 animate-pulse"
+              />
+            ))
+          ) : filteredGoals.length === 0 ? (
+            <div className="text-center col-span-full mt-4">
+              {searchQuery ? (
+                <div>
+                  <p className="text-gray-400 mb-2">
+                    No goals match your search for "{searchQuery}"
+                  </p>
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                  >
+                    Clear search
+                  </button>
+                </div>
+              ) : (
+                <p className="text-gray-400">
+                  No goals found. Create your first goal to get started!
+                </p>
+              )}
+            </div>
+          ) : (
+            filteredGoals.map((goal, idx) => (
+              <GoalCard
+                key={goal.id}
+                goal={goal}
+                index={idx}
+                onEditGoal={setEditing}
+                onDeleteGoal={deleteGoal}
+                deletingGoalId={deletingGoalId}
+              />
+            ))
+          )}
+        </div>
       </div>
 
       {editing && (
@@ -106,11 +166,11 @@ export default function GoalsSection({ onCreate }: GoalsSectionProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-slate-300 mb-1">Status</label>
-                  <select value={editing.status} onChange={e=>setEditing({ ...editing, status: e.target.value as any })} className="w-full rounded-xl bg-slate-800/50 border border-slate-600/50 text-white px-4 py-2">
+                  <select value={editing.status_title || editing.status || 'todo'} onChange={e=>setEditing({ ...editing, status_title: e.target.value })} className="w-full rounded-xl bg-slate-800/50 border border-slate-600/50 text-white px-4 py-2">
                     <option value="todo">To Do</option>
                     <option value="inProgress">In Progress</option>
                     <option value="testing">Testing</option>
-                    <option value="completed">Completed</option>
+                    <option value="done">Done</option>
                   </select>
                 </div>
                 <div>

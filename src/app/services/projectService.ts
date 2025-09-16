@@ -29,11 +29,11 @@ export const getProjectById = async (id: number): Promise<Project> => {
   return res.json();
 };
 
-export const updateProjectStatus = async (id: number, status: string) => {
+export const updateProjectStatus = async (id: number, statusTitle: string) => {
   const res = await fetch(`${API_URL}/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ statusTitle }),
   });
   if (!res.ok) throw new Error("Failed to update project status");
   return res.json();

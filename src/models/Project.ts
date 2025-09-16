@@ -5,7 +5,13 @@ export interface ProjectAttributes {
   id: number;
   name: string;
   description?: string;
-  status: 'todo' | 'inProgress' | 'testing' | 'completed' | 'archived';
+  statuses?: Array<{
+    id: number;
+    title: string;
+    description?: string;
+    color: string;
+  }> | null;
+  status_title: string;
   start_date?: Date;
   end_date?: Date;
   team_id: number;
@@ -16,7 +22,7 @@ export interface ProjectAttributes {
 }
 
 export interface ProjectCreationAttributes
-  extends Optional<ProjectAttributes, 'id' | 'createdAt' | 'updatedAt' | 'description' | 'start_date' | 'end_date' | 'files'> {}
+  extends Optional<ProjectAttributes, 'id' | 'createdAt' | 'updatedAt' | 'description' | 'start_date' | 'end_date' | 'files' | 'statuses' | 'status_title'> {}
 
 class Project extends Model<ProjectAttributes, ProjectCreationAttributes>
   implements ProjectAttributes {
@@ -24,7 +30,13 @@ class Project extends Model<ProjectAttributes, ProjectCreationAttributes>
   declare id: number;
   declare name: string;
   declare description?: string;
-  declare status: 'todo' | 'inProgress' | 'testing' | 'completed' | 'archived';
+  declare statuses?: Array<{
+    id: number;
+    title: string;
+    description?: string;
+    color: string;
+  }> | null;
+  declare status_title: string;
   declare start_date?: Date;
   declare end_date?: Date;
   declare team_id: number;
@@ -47,7 +59,7 @@ class Project extends Model<ProjectAttributes, ProjectCreationAttributes>
       if (action === 'created') {
         await notifyProjectCreated([this.owner_id], this.name, this.id);
       } else if (action === 'updated') {
-        await notifyProjectUpdated([this.owner_id], this.name, this.status, this.id);
+        await notifyProjectUpdated([this.owner_id], this.name, this.status_title, this.id);
       }
     } catch (error) {
       console.error(`Failed to send ${action} notification for project ${this.id}:`, error);
@@ -74,10 +86,16 @@ export const initProject = (sequelize: Sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      status: {
-        type: DataTypes.ENUM('todo', 'inProgress', 'testing', 'completed', 'archived'),
+      statuses: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        comment: 'JSON array of status objects with title, description, and color'
+      },
+      status_title: {
+        type: DataTypes.STRING(50),
         allowNull: false,
         defaultValue: 'todo',
+        comment: 'Current status title'
       },
       start_date: {
         type: DataTypes.DATEONLY,
@@ -117,7 +135,7 @@ export const initProject = (sequelize: Sequelize) => {
       underscored: true,
       indexes: [
         { fields: ['name'] },
-        { fields: ['status'] },
+        { fields: ['status_title'] },
         { fields: ['team_id'] },
         { fields: ['owner_id'] },
       ],

@@ -8,8 +8,10 @@ import { authenticateUser } from '@/lib/auth';
 const createTaskSchema = z.object({
   title: z.string().min(1, 'Task title is required').max(200, 'Task title must be less than 200 characters'),
   description: z.string().nullable().optional(),
-  status: z.enum(['todo', 'inProgress', 'testing', 'completed']).default('todo'),
+  statusTitle: z.string().optional(),
   dueDate: z.string().nullable().optional(),
+  expectedTime: z.number().min(0, 'Expected time must be non-negative').optional(),
+  spentTime: z.number().min(0, 'Spent time must be non-negative').optional(),
   assignedToId: z.number().nullable().optional(),
   goalId: z.number().min(1, 'Goal ID is required'),
 });
@@ -47,7 +49,7 @@ export async function GET(req: NextRequest) {
       where: whereClause,
       include: [
         { model: User, as: 'assignedTo', attributes: ['id', 'name', 'email'] },
-        { model: Goal, as: 'goal', attributes: ['id', 'title', 'status'] },
+        { model: Goal, as: 'goal', attributes: ['id', 'title'] },
       ],
       order: [['createdAt', 'DESC']],
     });
@@ -80,6 +82,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
     }
 
+    // Set default status if not provided
+    const finalStatusTitle = validatedData.statusTitle || 'todo';
+    
+    // Default statuses for new tasks (unified set)
+    const defaultStatuses = [
+      { id: 1, title: 'todo', description: 'Item is pending', color: '#6B7280', isDeletable: true },
+      { id: 2, title: 'inProgress', description: 'Item is in progress', color: '#3B82F6', isDeletable: true },
+      { id: 3, title: 'testing', description: 'Item is being tested', color: '#F59E0B', isDeletable: false },
+      { id: 4, title: 'done', description: 'Item is completed', color: '#10B981', isDeletable: false }
+    ];
+
     // Enforce: task deadline within project date range (if dates present)
     if (validatedData.dueDate) {
       const project = await Project.findByPk(goal.project_id);
@@ -106,16 +119,19 @@ export async function POST(req: NextRequest) {
       const task = await Task.create({
         title: validatedData.title,
         description: validatedData.description ?? undefined,
-        status: validatedData.status,
-      deadline: validatedData.dueDate ? new Date(validatedData.dueDate) : undefined,
+        statuses: defaultStatuses,
+        status_title: finalStatusTitle,
+        deadline: validatedData.dueDate ? new Date(validatedData.dueDate) : undefined,
+        expected_time: validatedData.expectedTime ?? 0,
+        spent_time: validatedData.spentTime ?? 0,
         goal_id: validatedData.goalId,
-      assigned_to_id: assigneeId ?? undefined,
+        assigned_to_id: assigneeId ?? undefined,
     });
 
     const createdTask = await Task.findByPk(task.id, {
       include: [
         { model: User, as: 'assignedTo', attributes: ['id', 'name', 'email'] },
-        { model: Goal, as: 'goal', attributes: ['id', 'title', 'status'] },
+        { model: Goal, as: 'goal', attributes: ['id', 'title'] },
       ],
     });
 
@@ -167,12 +183,16 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
+    // No need to verify status since we're using JSON statuses
+
     // Update task
     await task.update({
       title: validatedData.title ?? task.title,
       description: validatedData.description ?? task.description,
-      status: validatedData.status ?? task.status,
+      status_title: validatedData.statusTitle ?? task.status_title,
       deadline: validatedData.dueDate ? new Date(validatedData.dueDate) : task.deadline,
+      expected_time: validatedData.expectedTime ?? task.expected_time,
+      spent_time: validatedData.spentTime ?? task.spent_time,
       assigned_to_id: newAssignedId !== undefined ? newAssignedId : task.assigned_to_id,
       goal_id: validatedData.goalId ?? task.goal_id,
     });
@@ -182,8 +202,7 @@ export async function PATCH(req: NextRequest) {
     const updatedTask = await Task.findByPk(task.id, {
       include: [
         { model: User, as: 'assignedTo', attributes: ['id', 'name', 'email'] },
-        
-        { model: Goal, as: 'goal', attributes: ['id', 'title', 'status'] },
+        { model: Goal, as: 'goal', attributes: ['id', 'title'] },
       ],
     });
 

@@ -36,12 +36,17 @@ function AddTaskPageContent() {
     title: "",
     description: "",
     priority: "medium" as "low" | "medium" | "high" | "urgent",
-    status: "todo" as "todo" | "in-progress" | "review" | "completed",
+    statusTitle: 'todo',
     assignedToId: "", // Keep for backward compatibility
     assigneeIds: [] as number[], // New field for multiple assignees
     dueDate: "",
-    estimatedHours: "",
+    expectedTime: "", // in hours
+    spentTime: "", // in hours
+    goalId: "", // Required field for tasks
   });
+  
+  const [statuses, setStatuses] = useState<any[]>([]);
+  const [goals, setGoals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,6 +85,37 @@ function AddTaskPageContent() {
     fetchProjectData();
   }, [projectId, router]);
 
+  // Fetch statuses and goals
+  useEffect(() => {
+    const fetchStatusesAndGoals = async () => {
+      try {
+        // Use local default task statuses; API table is removed
+        setStatuses([
+          { id: 1, title: 'todo', description: 'Task is pending', color: '#6B7280' },
+          { id: 2, title: 'inProgress', description: 'Task is in progress', color: '#3B82F6' },
+          { id: 3, title: 'testing', description: 'Task is being tested', color: '#F59E0B' },
+          { id: 4, title: 'review', description: 'Task is under review', color: '#8B5CF6' },
+          { id: 5, title: 'done', description: 'Task is completed', color: '#10B981' }
+        ]);
+
+        // Fetch goals for this project
+        if (projectId) {
+          const goalsResponse = await fetch(`/api/goals?projectId=${projectId}`, {
+            credentials: 'include'
+          });
+          if (goalsResponse.ok) {
+            const goalsData = await goalsResponse.json();
+            setGoals(goalsData.goals || []);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching statuses and goals:', error);
+      }
+    };
+
+    fetchStatusesAndGoals();
+  }, [projectId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -88,6 +124,12 @@ function AddTaskPageContent() {
     // Client-side validation
     if (!formData.title.trim()) {
       setError("Task title is required");
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.goalId) {
+      setError("Goal is required");
       setLoading(false);
       return;
     }
@@ -102,13 +144,12 @@ function AddTaskPageContent() {
       const taskData = {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
-        priority: formData.priority,
-        status: formData.status,
-        assigneeIds: formData.assigneeIds.length > 0 ? formData.assigneeIds : undefined,
-        assignedToId: formData.assignedToId ? parseInt(formData.assignedToId) : null, // Keep for backward compatibility
+        statusTitle: formData.statusTitle,
+        assignedToId: formData.assignedToId ? parseInt(formData.assignedToId) : null,
         dueDate: formData.dueDate || null,
-        estimatedHours: formData.estimatedHours ? parseFloat(formData.estimatedHours) : null,
-        projectId: parseInt(projectId!),
+        expectedTime: formData.expectedTime ? parseFloat(formData.expectedTime) * 60 : 0, // Convert hours to minutes
+        spentTime: formData.spentTime ? parseFloat(formData.spentTime) * 60 : 0, // Convert hours to minutes
+        goalId: parseInt(formData.goalId),
       };
 
       const response = await fetch('/api/tasks', {
@@ -136,7 +177,7 @@ function AddTaskPageContent() {
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -297,14 +338,15 @@ function AddTaskPageContent() {
                 </label>
                 <div className="relative">
                   <select
-                    value={formData.status}
-                    onChange={(e) => handleInputChange('status', e.target.value)}
+                    value={formData.statusTitle}
+                    onChange={(e) => handleInputChange('statusTitle', e.target.value)}
                     className="w-full px-6 py-4 bg-gray-800/50 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-300 backdrop-blur-sm relative z-10 appearance-none cursor-pointer"
                   >
-                    <option value="todo">To Do</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="review">Review</option>
-                    <option value="completed">Completed</option>
+                    {statuses.map((status) => (
+                      <option key={status.id} value={status.title}>
+                        {status.title.charAt(0).toUpperCase() + status.title.slice(1)}
+                      </option>
+                    ))}
                   </select>
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/5 to-pink-500/5 pointer-events-none"></div>
                 </div>
@@ -388,8 +430,34 @@ function AddTaskPageContent() {
               </div>
             </div>
 
-            {/* Due Date and Estimated Hours Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Goal Selection Field */}
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 text-sm font-semibold text-gray-200">
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-500/30 to-green-500/30 flex items-center justify-center">
+                  <Flag className="w-3 h-3 text-emerald-300" />
+                </div>
+                Goal *
+              </label>
+              <div className="relative">
+                <select
+                  value={formData.goalId}
+                  onChange={(e) => handleInputChange('goalId', e.target.value)}
+                  className="w-full px-6 py-4 bg-gray-800/50 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all duration-300 backdrop-blur-sm relative z-10 appearance-none cursor-pointer"
+                  required
+                >
+                  <option value="">Select a goal...</option>
+                  {goals.map((goal) => (
+                    <option key={goal.id} value={goal.id}>
+                      {goal.title}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-emerald-500/5 to-green-500/5 pointer-events-none"></div>
+              </div>
+            </div>
+
+            {/* Due Date and Time Tracking Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Due Date Field */}
               <div className="space-y-3">
                 <label className="flex items-center gap-3 text-sm font-semibold text-gray-200">
@@ -409,25 +477,47 @@ function AddTaskPageContent() {
                 </div>
               </div>
 
-              {/* Estimated Hours Field */}
+              {/* Expected Time Field */}
               <div className="space-y-3">
                 <label className="flex items-center gap-3 text-sm font-semibold text-gray-200">
                   <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-yellow-500/30 to-orange-500/30 flex items-center justify-center">
                     <Clock className="w-3 h-3 text-yellow-300" />
                   </div>
-                  Estimated Hours
+                  Expected Time (hours)
                 </label>
                 <div className="relative">
                   <input
                     type="number"
                     step="0.5"
                     min="0"
-                    value={formData.estimatedHours}
-                    onChange={(e) => handleInputChange('estimatedHours', e.target.value)}
+                    value={formData.expectedTime}
+                    onChange={(e) => handleInputChange('expectedTime', e.target.value)}
                     className="w-full px-6 py-4 bg-gray-800/50 border border-white/10 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500/50 focus:border-yellow-500/50 transition-all duration-300 backdrop-blur-sm relative z-10"
-                    placeholder="e.g., 2.5 hours"
+                    placeholder="e.g., 2.5"
                   />
                   <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-yellow-500/5 to-orange-500/5 pointer-events-none"></div>
+                </div>
+              </div>
+
+              {/* Spent Time Field */}
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 text-sm font-semibold text-gray-200">
+                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center">
+                    <Clock className="w-3 h-3 text-purple-300" />
+                  </div>
+                  Spent Time (hours)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={formData.spentTime}
+                    onChange={(e) => handleInputChange('spentTime', e.target.value)}
+                    className="w-full px-6 py-4 bg-gray-800/50 border border-white/10 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-300 backdrop-blur-sm relative z-10"
+                    placeholder="e.g., 1.5"
+                  />
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/5 to-pink-500/5 pointer-events-none"></div>
                 </div>
               </div>
             </div>
@@ -445,7 +535,7 @@ function AddTaskPageContent() {
               </button>
               <button
                 type="submit"
-                disabled={loading || !formData.title.trim()}
+                disabled={loading || !formData.title.trim() || !formData.goalId}
                 className="px-6 py-3 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 hover:from-blue-700 hover:via-purple-700 hover:to-blue-800 disabled:from-gray-600 disabled:via-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-300 flex items-center justify-center gap-2 font-medium shadow-lg hover:shadow-blue-500/30 transform hover:scale-105 disabled:hover:scale-100 backdrop-blur-sm relative overflow-hidden group"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

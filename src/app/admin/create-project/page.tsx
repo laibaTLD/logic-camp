@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Users, Calendar, FolderOpen, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import useAdminData from "../hooks/useAdminData";
+import { StatusItem } from "@/types";
+import StatusDropdown from "@/components/StatusDropdown";
 
 export default function CreateProjectPage() {
   const router = useRouter();
@@ -14,7 +16,7 @@ export default function CreateProjectPage() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    status: "todo" as "todo" | "inProgress" | "testing" | "completed" | "archived",
+    status: "planning", // Default to first project status
     startDate: "",
     endDate: "",
     teamId: "",
@@ -26,6 +28,18 @@ export default function CreateProjectPage() {
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Status management state
+  const [customStatuses, setCustomStatuses] = useState<StatusItem[]>([]);
+
+  // Status management handlers
+  const handleStatusesChange = (statuses: StatusItem[]) => {
+    setCustomStatuses(statuses);
+  };
+
+  const handleStatusSelect = (status: string) => {
+    setFormData(prev => ({ ...prev, status }));
+  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -95,6 +109,11 @@ export default function CreateProjectPage() {
       projectData.append("status", formData.status);
       projectData.append("teamId", formData.teamId);
       
+      // Add custom statuses as JSON
+      if (customStatuses.length > 0) {
+        projectData.append("customStatuses", JSON.stringify(customStatuses));
+      }
+      
       if (formData.startDate) {
         projectData.append("startDate", formData.startDate);
       }
@@ -120,13 +139,7 @@ export default function CreateProjectPage() {
     }
   };
 
-  const statusOptions = [
-    { value: "todo", label: "To Do", color: "text-gray-400" },
-    { value: "inProgress", label: "In Progress", color: "text-blue-400" },
-    { value: "testing", label: "Testing", color: "text-yellow-400" },
-    { value: "completed", label: "Completed", color: "text-green-400" },
-    { value: "archived", label: "Archived", color: "text-purple-400" },
-  ];
+  // Remove hardcoded status options - now using dynamic statuses
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -187,20 +200,14 @@ export default function CreateProjectPage() {
                 </div>
 
                 {/* Status */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Status</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => handleInputChange("status", e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-                  >
-                    {statusOptions.map((option) => (
-                      <option key={option.value} value={option.value} className="bg-slate-800">
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <StatusDropdown
+                  statuses={customStatuses}
+                  onStatusesChange={handleStatusesChange}
+                  selectedStatus={formData.status}
+                  onStatusSelect={handleStatusSelect}
+                  entityType="project"
+                  disabled={loading}
+                />
               </div>
 
               {/* Description */}

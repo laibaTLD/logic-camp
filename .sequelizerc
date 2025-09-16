@@ -1,0 +1,9 @@
+const path = require('path');
+
+module.exports = {
+  'config': path.resolve('sequelize.config.js'),
+  'models-path': path.resolve('src/models'),
+  'seeders-path': path.resolve('src/seeders'),
+  'migrations-path': path.resolve('src/migrations'),
+  'url': process.env.DATABASE_URL || `postgres://${process.env.DB_USER || 'postgres'}:${process.env.DB_PASSWORD}@${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}/${process.env.DB_NAME || 'myteamcamp'}`
+};

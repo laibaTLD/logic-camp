@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { ArrowLeft, Save, Users, Calendar, FolderOpen, AlertCircle } from "lucide-react";
 import toast from "react-hot-toast";
+import { StatusItem } from "@/types";
+import StatusDropdown from "@/components/StatusDropdown";
 
 interface CreateProjectSectionProps {
   teams: any[];
@@ -21,7 +23,7 @@ export default function CreateProjectSection({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    status: "todo" as "todo" | "inProgress" | "testing" | "completed" | "archived",
+    status: "planning", // Default to first project status
     startDate: "",
     endDate: "",
     teamId: "",
@@ -29,6 +31,18 @@ export default function CreateProjectSection({
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Status management state
+  const [customStatuses, setCustomStatuses] = useState<StatusItem[]>([]);
+
+  // Status management handlers
+  const handleStatusesChange = (statuses: StatusItem[]) => {
+    setCustomStatuses(statuses);
+  };
+
+  const handleStatusSelect = (status: string) => {
+    setFormData(prev => ({ ...prev, status }));
+  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -77,6 +91,7 @@ export default function CreateProjectSection({
         teamId: parseInt(formData.teamId),
         startDate: formData.startDate || undefined,
         endDate: formData.endDate || undefined,
+        customStatuses: customStatuses.length > 0 ? customStatuses : undefined,
       });
 
       toast.success(`Project "${formData.name}" created successfully!`);
@@ -85,11 +100,12 @@ export default function CreateProjectSection({
       setFormData({
         name: "",
         description: "",
-        status: "todo",
+        status: "planning",
         startDate: "",
         endDate: "",
         teamId: "",
       });
+      setCustomStatuses([]);
       setErrors({});
       
       // Go back to projects section
@@ -102,14 +118,6 @@ export default function CreateProjectSection({
     }
   };
 
-  const statusOptions = [
-    { value: "todo", label: "To Do", color: "text-gray-400" },
-    { value: "inProgress", label: "In Progress", color: "text-blue-400" },
-    { value: "testing", label: "Testing", color: "text-yellow-400" },
-    { value: "completed", label: "Completed", color: "text-green-400" },
-    { value: "archived", label: "Archived", color: "text-purple-400" },
-  ];
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -121,7 +129,7 @@ export default function CreateProjectSection({
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-white">Create New Project</h1>
+          <h1 className="text-xl font-bold text-white">Create New Project</h1>
           <p className="text-slate-400">Set up a new project with all necessary details</p>
         </div>
       </div>
@@ -135,7 +143,10 @@ export default function CreateProjectSection({
               <div className="p-2 rounded-lg bg-indigo-600/20 text-indigo-400">
                 <FolderOpen className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-semibold text-white">Project Information</h2>
+              <div>
+                <h2 className="text-lg font-semibold text-white">Project Information</h2>
+                <p className="text-slate-400 text-sm">Give your project a clear name and initial status.</p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -152,6 +163,7 @@ export default function CreateProjectSection({
                   className={`w-full px-4 py-3 rounded-xl bg-slate-700/50 border text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 ${
                     errors.name ? "border-red-500/50" : "border-slate-600/50"
                   }`}
+                  autoFocus
                 />
                 {errors.name && (
                   <div className="flex items-center gap-2 text-red-400 text-sm">
@@ -162,21 +174,19 @@ export default function CreateProjectSection({
               </div>
 
               {/* Status */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => handleInputChange("status", e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-                >
-                  {statusOptions.map((option) => (
-                    <option key={option.value} value={option.value} className="bg-slate-800">
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <StatusDropdown
+                statuses={customStatuses}
+                onStatusesChange={handleStatusesChange}
+                selectedStatus={formData.status}
+                onStatusSelect={handleStatusSelect}
+                entityType="project"
+                disabled={loading}
+              />
             </div>
+
+            <p className="text-xs text-slate-400 -mt-2">
+              You can add, reorder, or remove statuses. Your first change turns defaults into a custom list.
+            </p>
 
             {/* Description */}
             <div className="space-y-2">
@@ -188,6 +198,7 @@ export default function CreateProjectSection({
                 rows={4}
                 className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 resize-none"
               />
+              <div className="text-xs text-slate-500">Optional. Briefly explain what this project is about.</div>
             </div>
           </div>
 
@@ -197,7 +208,10 @@ export default function CreateProjectSection({
               <div className="p-2 rounded-lg bg-purple-600/20 text-purple-400">
                 <Users className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-semibold text-white">Team Assignment</h2>
+              <div>
+                <h2 className="text-lg font-semibold text-white">Team Assignment</h2>
+                <p className="text-slate-400 text-sm">Select the team that will own this project.</p>
+              </div>
             </div>
 
             {/* Team Selection */}
@@ -240,7 +254,10 @@ export default function CreateProjectSection({
               <div className="p-2 rounded-lg bg-green-600/20 text-green-400">
                 <Calendar className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-semibold text-white">Project Timeline</h2>
+              <div>
+                <h2 className="text-lg font-semibold text-white">Project Timeline</h2>
+                <p className="text-slate-400 text-sm">Set optional start and end dates.</p>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

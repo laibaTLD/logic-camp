@@ -29,8 +29,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
               model: User,
               as: 'members',
               through: {
-                attributes: ['role', 'joinedAt', 'isActive'],
-                where: { isActive: true }
+                attributes: ['role', 'joined_at', 'is_active'],
+                where: { is_active: true }
               },
               attributes: ['id', 'name', 'email', 'role']
             }
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         },
         {
           model: User,
-          as: 'creator',
+          as: 'owner',
           attributes: ['id', 'name', 'email']
         }
       ]
@@ -78,8 +78,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 const updateProjectSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().optional(),
-  status: z.enum(["todo", "inProgress", "testing", "completed", "archived"]).optional(),
-  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+  statusTitle: z.string().optional(),
   startDate: z
     .string()
     .optional()
@@ -89,6 +88,14 @@ const updateProjectSchema = z.object({
     .optional()
     .refine((val) => !val || !isNaN(Date.parse(val)), { message: "Invalid endDate format" }),
   teamId: z.number().optional(),
+  customStatuses: z
+    .array(z.object({
+      id: z.number(),
+      title: z.string(),
+      description: z.string().optional(),
+      color: z.string()
+    }))
+    .optional(),
 });
 
 // ---------------------
@@ -102,9 +109,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const payload = authResult;
 
-    // Admin-only check
-    if (payload.role !== "admin") {
-      return NextResponse.json({ error: "Only admins can update projects" }, { status: 403 });
+    // Allow admins and team leads to update projects
+    if (payload.role !== "admin" && payload.role !== "team_lead") {
+      return NextResponse.json({ error: "Only admins or team leads can update projects" }, { status: 403 });
     }
 
     const resolvedParams = await params;
@@ -119,21 +126,37 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const body = await req.json();
+    console.log('Project update request body:', body);
     const parsedData = updateProjectSchema.parse(body);
 
     const validatedData: any = { ...parsedData };
 
     // Convert date strings to JS Date objects
-    if (validatedData.startDate) validatedData.startDate = new Date(validatedData.startDate);
-    if (validatedData.endDate) validatedData.endDate = new Date(validatedData.endDate);
+    if (validatedData.startDate) validatedData.start_date = new Date(validatedData.startDate);
+    if (validatedData.endDate) validatedData.end_date = new Date(validatedData.endDate);
+    if (validatedData.statusTitle) validatedData.status_title = validatedData.statusTitle;
+    if (validatedData.customStatuses) validatedData.statuses = validatedData.customStatuses;
 
+    console.log('Validated data for update:', validatedData);
     await project.update(validatedData);
+    console.log('Project updated successfully');
 
     const updatedProject = await Project.findByPk(projectId, {
       include: [
-        { model: User, as: "creator", attributes: ["id", "name", "email"] },
-        { model: Team, as: "team", attributes: ["id", "name"] },
-        { model: User, as: "members", through: { attributes: [] }, attributes: ["id", "name", "email"] },
+        { model: User, as: 'owner', attributes: ['id', 'name', 'email'] },
+        {
+          model: Team,
+          as: 'team',
+          attributes: ['id', 'name'],
+          include: [
+            {
+              model: User,
+              as: 'members',
+              through: { attributes: ['role', 'joined_at', 'is_active'] },
+              attributes: ['id', 'name', 'email', 'role']
+            }
+          ]
+        }
       ],
     });
 
