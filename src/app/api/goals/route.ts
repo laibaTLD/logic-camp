@@ -9,6 +9,16 @@ const createSchema = z.object({
   statusTitle: z.string().optional(),
   projectId: z.number(),
   deadline: z.string().optional(),
+  statuses: z
+    .array(
+      z.object({
+        id: z.number(),
+        title: z.string(),
+        description: z.string().optional(),
+        color: z.string(),
+      })
+    )
+    .optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -62,7 +72,7 @@ export async function POST(req: NextRequest) {
     const goal = await Goal.create({
       title: parsed.data.title,
       description: parsed.data.description ?? null,
-      statuses: defaultStatuses,
+      statuses: parsed.data.statuses && parsed.data.statuses.length > 0 ? parsed.data.statuses : defaultStatuses,
       status_title: finalStatusTitle,
       project_id: parsed.data.projectId,
       deadline: parsed.data.deadline ?? null,

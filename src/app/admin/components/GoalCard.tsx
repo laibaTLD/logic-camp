@@ -395,7 +395,13 @@ const GoalCard: React.FC<GoalCardProps> = ({
 
   // Event handlers
   const handleCardClick = () => {
-    router.push(`/admin/goals/${goal.id}`);
+    const projectId = (goal as any)?.project?.id || (project?.id ?? (goal as any)?.project_id);
+    if (projectId) {
+      router.push(`/admin/projects/${projectId}/goals/${goal.id}`);
+    } else {
+      // Fallback: navigate to goals by id if project is missing
+      router.push(`/admin/goals/${goal.id}`);
+    }
   };
 
   const handleEditClick = (e: React.MouseEvent) => {

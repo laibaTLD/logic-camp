@@ -235,10 +235,9 @@ export default function AdminProjectDetails({ project, initialGoals = [] }: Admi
         title: goalForm.title.trim(),
         description: goalForm.description?.trim() || undefined,
         deadline: goalForm.deadline || undefined,
-        status: goalForm.status || 'todo',
+        statusTitle: goalForm.status || 'todo',
         projectId: project.id,
-        tasks: [],
-        completed: (goalForm.status || 'todo') === 'completed',
+        statuses: customStatuses && customStatuses.length > 0 ? customStatuses : undefined,
       } as any;
       const res = await createGoal(payload);
       const created = (res as any)?.goal || res;
@@ -504,17 +503,13 @@ export default function AdminProjectDetails({ project, initialGoals = [] }: Admi
                 onChange={(e) => setGoalForm({ ...goalForm, deadline: e.target.value })}
                 className="bg-gray-800/60 text-gray-100 border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
-              <select
-                value={goalForm.status}
-                onChange={(e) => setGoalForm({ ...goalForm, status: e.target.value })}
-                className="bg-gray-800/60 text-gray-100 border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-              >
-                {getStatusesByEntity('goal').map(status => (
-                  <option key={status.id} value={status.title}>
-                    {status.title.charAt(0).toUpperCase() + status.title.slice(1)}
-                  </option>
-                ))}
-              </select>
+              <StatusDropdown
+                statuses={customStatuses}
+                onStatusesChange={setCustomStatuses}
+                selectedStatus={goalForm.status}
+                onStatusSelect={(status) => setGoalForm({ ...goalForm, status })}
+                entityType="goal"
+              />
             </div>
             <div className="mt-3">
               <button

@@ -14,6 +14,7 @@ import {
   Users
 } from "lucide-react";
 import toast from "react-hot-toast";
+import StatusDropdown from "@/components/StatusDropdown";
 
 interface AdminGoalDetailsProps {
   goal: any;
@@ -41,7 +42,7 @@ const STATUS_CONFIG = {
 
 export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetailsProps) {
   const router = useRouter();
-  const [tasks, setTasks] = useState<Task[]>(initialTasks || []);
+  const [tasks, setTasks] = useState<Task[]>(Array.isArray(initialTasks) ? initialTasks.filter(Boolean) as Task[] : []);
   const [loading, setLoading] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalData, setGoalData] = useState({
@@ -129,7 +130,8 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
       if (!response.ok) throw new Error('Failed to create task');
       
       const data = await response.json();
-      setTasks(prev => [...prev, data.task]);
+      const created: Task | null = (data && (data.task || data)) || null;
+      setTasks(prev => [...prev.filter(Boolean), created].filter(Boolean) as Task[]);
       setNewTask({ title: '', description: '', status_title: 'todo', deadline: '' });
       setShowAddTask(false);
       toast.success('Task created successfully');
@@ -151,9 +153,10 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
 
       if (!response.ok) throw new Error('Failed to update task status');
       
-      setTasks(prev => prev.map(task => 
-        task.id === taskId ? { ...task, status_title: newStatus } : task
-      ));
+      setTasks(prev => (prev || []).filter(Boolean).map((t) => {
+        const task = t as Task;
+        return task.id === taskId ? { ...task, status_title: newStatus } as Task : task;
+      }));
       toast.success('Task status updated');
     } catch (error) {
       toast.error('Failed to update task status');
@@ -173,7 +176,7 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
 
       if (!response.ok) throw new Error('Failed to delete task');
       
-      setTasks(prev => prev.filter(task => task.id !== taskId));
+      setTasks(prev => (prev || []).filter(Boolean).filter((t) => (t as Task).id !== taskId) as Task[]);
       toast.success('Task deleted successfully');
     } catch (error) {
       toast.error('Failed to delete task');
@@ -207,16 +210,13 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">Status</label>
-                  <select
-                    value={goalData.status_title}
-                    onChange={(e) => setGoalData(prev => ({ ...prev, status_title: e.target.value }))}
-                    className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="todo">To Do</option>
-                    <option value="inProgress">In Progress</option>
-                    <option value="testing">Testing</option>
-                    <option value="done">Done</option>
-                  </select>
+                  <StatusDropdown
+                    statuses={[]}
+                    onStatusesChange={() => {}}
+                    selectedStatus={goalData.status_title}
+                    onStatusSelect={(status) => setGoalData(prev => ({ ...prev, status_title: status }))}
+                    entityType="goal"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">Deadline</label>
@@ -326,16 +326,13 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">Status</label>
-                  <select
-                    value={newTask.status_title}
-                    onChange={(e) => setNewTask(prev => ({ ...prev, status_title: e.target.value }))}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="todo">To Do</option>
-                    <option value="inProgress">In Progress</option>
-                    <option value="testing">Testing</option>
-                    <option value="done">Done</option>
-                  </select>
+                  <StatusDropdown
+                    statuses={[]}
+                    onStatusesChange={() => {}}
+                    selectedStatus={newTask.status_title}
+                    onStatusSelect={(status) => setNewTask(prev => ({ ...prev, status_title: status }))}
+                    entityType="task"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">Deadline</label>
@@ -374,47 +371,61 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
               <p>No tasks yet. Add your first task to get started!</p>
             </div>
           ) : (
-            tasks.map((task) => {
+            tasks.map((task, idx) => {
               const taskStatusConfig = getStatusConfig(task.status_title || task.status || 'todo');
               return (
-                <div key={task.id} className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-white mb-1">{task.title}</h3>
-                      {task.description && (
-                        <p className="text-gray-400 text-sm mb-2">{task.description}</p>
-                      )}
-                      <div className="flex items-center gap-4 text-sm">
+                <div
+                  key={task.id}
+                  className="group animate-fadeInUp transform transition-all duration-700 hover:scale-[1.02] w-full mx-auto"
+                  style={{ animationDelay: `${0.06 * idx}s` }}
+                >
+                  <div
+                    className={`relative text-left w-full rounded-2xl border backdrop-blur-xl p-3 sm:p-4 
+                    overflow-hidden transition-all duration-500 ease-out
+                    border-white/10 bg-gradient-to-br from-slate-900/60 via-slate-800/30 to-slate-900/40 shadow-xl
+                    group-hover:border-white/30 group-hover:shadow-2xl`}
+                  >
+                    <div className="relative z-10">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-bold text-sm sm:text-lg leading-tight line-clamp-2 text-white">
+                            {task.title}
+                          </h3>
+                          {task.description && (
+                            <p className="mt-1 text-xs sm:text-sm text-gray-400 line-clamp-2 break-words">
+                              {task.description}
+                            </p>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2">
+                          <StatusDropdown
+                            statuses={[]}
+                            onStatusesChange={() => {}}
+                            selectedStatus={task.status_title || (task as any).status || 'todo'}
+                            onStatusSelect={(status) => handleUpdateTaskStatus(task.id, status)}
+                            entityType="task"
+                          />
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                            title="Delete task"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <div className="flex items-center gap-2 text-xs sm:text-sm">
                           <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: taskStatusConfig.color }} />
-                          <span className="text-gray-300">{taskStatusConfig.label}</span>
+                          <span className="text-gray-300 capitalize">{taskStatusConfig.label}</span>
                         </div>
                         {task.deadline && (
-                          <div className="flex items-center gap-2 text-gray-400">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400 justify-end">
                             <Calendar className="w-4 h-4" />
                             <span>Due: {new Date(task.deadline).toLocaleDateString()}</span>
                           </div>
                         )}
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={task.status_title || task.status || 'todo'}
-                        onChange={(e) => handleUpdateTaskStatus(task.id, e.target.value)}
-                        className="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
-                      >
-                        <option value="todo">To Do</option>
-                        <option value="inProgress">In Progress</option>
-                        <option value="testing">Testing</option>
-                        <option value="done">Done</option>
-                      </select>
-                      <button
-                        onClick={() => handleDeleteTask(task.id)}
-                        className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                        title="Delete task"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
                 </div>

@@ -8,10 +8,16 @@ import { authenticateUser } from '@/lib/auth';
 const updateTaskSchema = z.object({
   title: z.string().min(1, 'Task title is required').max(200, 'Task title must be less than 200 characters').optional(),
   description: z.string().optional(),
-  status: z.enum(['todo', 'inProgress', 'testing', 'completed']).optional(),
+  status: z.enum(['todo', 'inProgress', 'testing', 'completed', 'done']).optional(),
   dueDate: z.string().optional(),
   assignedToId: z.number().optional(),
   goalId: z.number().min(1, 'Goal ID is required').optional(),
+  statuses: z.array(z.object({
+    id: z.number(),
+    title: z.string(),
+    description: z.string().optional(),
+    color: z.string(),
+  })).optional(),
 });
 
 // --------------------
@@ -62,7 +68,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { Task, User, Goal, Project } = await getModels();
+    const { Task } = await getModels();
 
     const authResult = await authenticateUser(req);
     if (authResult instanceof NextResponse) return authResult;
@@ -74,62 +80,30 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
     }
 
-    const body = await req.json();
-    const validatedData = updateTaskSchema.parse(body);
-
-    const task = await Task.findByPk(taskId);
-    if (!task) {
+    const existing = await Task.findByPk(taskId);
+    if (!existing) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    // Validate assigned user if provided
-    let newAssignedId: number | null | undefined = undefined;
-    if (validatedData.assignedToId !== undefined) {
-      const assignee = validatedData.assignedToId ? await User.findByPk(validatedData.assignedToId) : null;
-      if (validatedData.assignedToId && !assignee) {
-        return NextResponse.json({ error: 'Assigned user not found' }, { status: 400 });
-      }
-      newAssignedId = validatedData.assignedToId ?? null;
+    const body = await req.json();
+    const parsed = updateTaskSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Validation failed', details: parsed.error.issues }, { status: 400 });
     }
 
-    // Validate deadline within project range if provided
-    if (validatedData.dueDate) {
-      const goal = await Goal.findByPk(task.goal_id);
-      if (goal) {
-        const project = await Project.findByPk(goal.project_id);
-        if (project) {
-          const due = new Date(validatedData.dueDate);
-          if (project.start_date && due < new Date(project.start_date)) {
-            return NextResponse.json({ error: 'Task deadline is before project start_date' }, { status: 422 });
-          }
-          if (project.end_date && due > new Date(project.end_date)) {
-            return NextResponse.json({ error: 'Task deadline is after project end_date' }, { status: 422 });
-          }
-        }
-      }
-    }
+    const updates: any = {};
+    if (parsed.data.title !== undefined) updates.title = parsed.data.title;
+    if (parsed.data.description !== undefined) updates.description = parsed.data.description;
+    if (parsed.data.status !== undefined) updates.status_title = parsed.data.status;
+    if (parsed.data.dueDate !== undefined) updates.deadline = parsed.data.dueDate;
+    if (parsed.data.assignedToId !== undefined) updates.assigned_to_id = parsed.data.assignedToId;
+    if (parsed.data.goalId !== undefined) updates.goal_id = parsed.data.goalId;
+    if (parsed.data.statuses !== undefined) updates.statuses = parsed.data.statuses;
 
-    // Update task
-    await task.update({
-      title: validatedData.title ?? task.title,
-      description: validatedData.description ?? task.description,
-      status_title: validatedData.status ?? task.status_title,
-      deadline: validatedData.dueDate ? new Date(validatedData.dueDate) : task.deadline,
-      assigned_to_id: newAssignedId !== undefined ? newAssignedId : task.assigned_to_id,
-      goal_id: validatedData.goalId ?? task.goal_id,
-    });
+    await existing.update(updates);
 
-    const updatedTask = await Task.findByPk(task.id, {
-      include: [
-        { model: User, as: 'assignedTo', attributes: ['id', 'name', 'email'] },
-        { model: Goal, as: 'goal', attributes: ['id', 'title', 'status'] },
-      ],
-    });
-
-    return NextResponse.json(
-      { message: 'Task updated successfully', task: updatedTask },
-      { status: 200 }
-    );
+    const updated = await Task.findByPk(taskId);
+    return NextResponse.json({ task: updated }, { status: 200 });
   } catch (error) {
     console.error('Update task by ID error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
