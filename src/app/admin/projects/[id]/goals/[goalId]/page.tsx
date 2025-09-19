@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
 import AdminGoalDetails from '@/app/admin/goals/components/AdminGoalDetails';
 import GoalDetailsLoader from '@/app/admin/goals/components/GoalDetailsLoader';
+import ClientLayout from './components/ClientLayout';
 
 export default async function AdminProjectGoalPage({ params }: { params: Promise<{ id: string; goalId: string }> }) {
   const resolvedParams = await params;
@@ -53,10 +54,10 @@ export default async function AdminProjectGoalPage({ params }: { params: Promise
     const tasksCount = Array.isArray(initialTasks) ? initialTasks.length : 0;
 
     return (
-      <div className="min-h-screen bg-[#0b0b10] text-white">
+      <ClientLayout>
         {/* Page header */}
-        <div className="border-b border-white/10 bg-white/5 backdrop-blur-md">
-          <div className="mx-auto max-w-7xl px-6 py-6">
+        <div className="border-b border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl overflow-hidden">
+          <div className="mx-auto max-w-7xl px-2 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-5">
             {/* Breadcrumbs */}
             <nav className="text-sm text-gray-400 mb-3" aria-label="Breadcrumb">
               <ol className="inline-flex items-center gap-2">
@@ -71,7 +72,7 @@ export default async function AdminProjectGoalPage({ params }: { params: Promise
             {/* Title row */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{goal?.title}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">{goal?.title}</h1>
                 <p className="text-gray-400 mt-1 truncate max-w-3xl">{goal?.description || 'No description provided.'}</p>
               </div>
               <div className="flex items-center gap-3">
@@ -81,7 +82,7 @@ export default async function AdminProjectGoalPage({ params }: { params: Promise
                 </span>
                 <a
                   href={`/admin/projects/${projectId}`}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm transition-colors"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-3.5 py-2 text-sm text-white shadow-md hover:shadow-lg hover:scale-[1.02] transition-all"
                 >
                   ← Back to Project
                 </a>
@@ -90,21 +91,21 @@ export default async function AdminProjectGoalPage({ params }: { params: Promise
 
             {/* Quick stats */}
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
                 <div className="text-xs uppercase tracking-wider text-gray-400">Project</div>
-                <div className="text-white mt-1">{projectName}</div>
+                <div className="text-white mt-1 font-medium">{projectName}</div>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
                 <div className="text-xs uppercase tracking-wider text-gray-400">Deadline</div>
-                <div className="text-white mt-1">{goal?.deadline ? new Date(goal.deadline).toLocaleDateString() : 'Not set'}</div>
+                <div className="text-white mt-1 font-medium">{goal?.deadline ? new Date(goal.deadline).toLocaleDateString() : 'Not set'}</div>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
                 <div className="text-xs uppercase tracking-wider text-gray-400">Tasks</div>
-                <div className="text-white mt-1">{tasksCount}</div>
+                <div className="text-white mt-1 font-medium">{tasksCount}</div>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
                 <div className="text-xs uppercase tracking-wider text-gray-400">Created</div>
-                <div className="text-white mt-1">{goal?.createdAt ? new Date(goal.createdAt).toLocaleDateString() : '—'}</div>
+                <div className="text-white mt-1 font-medium">{goal?.createdAt ? new Date(goal.createdAt).toLocaleDateString() : '—'}</div>
               </div>
             </div>
           </div>
@@ -112,11 +113,11 @@ export default async function AdminProjectGoalPage({ params }: { params: Promise
 
         {/* Main content */}
         <div className="mx-auto max-w-7xl px-2 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-6 sm:py-8">
-          <div className="rounded-2xl border border-slate-700/50 bg-slate-800/30 p-3 sm:p-4 lg:p-6 backdrop-blur-xl">
+          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
             <AdminGoalDetails goal={goal} initialTasks={initialTasks} />
           </div>
         </div>
-      </div>
+      </ClientLayout>
     );
   } catch (_e) {
     // Network/URL issues -> client fallback

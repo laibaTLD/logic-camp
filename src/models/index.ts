@@ -9,6 +9,7 @@ import Task from "./Task";
 import Team from "./Team";
 import TeamMember from "./TeamMember";
 import TaskComment from "./TaskComment";
+import Message from "./Message";
 
 // Type definitions for model associations
 export interface ModelsInterface {
@@ -19,6 +20,7 @@ export interface ModelsInterface {
   Team: typeof Team;
   TaskComment: typeof TaskComment;
   TeamMember: typeof TeamMember;
+  Message: typeof Message;
   sequelize: Sequelize;
 }
 
@@ -30,6 +32,7 @@ import { initTask } from "./Task";
 import { initTeam } from "./Team";
 import { initTeamMember } from "./TeamMember";
 import { initTaskComment } from "./TaskComment";
+import { initMessage } from "./Message";
 
 /**
  * Initialize all models.
@@ -47,6 +50,7 @@ export const initializeModels = (sequelizeInstance: Sequelize = sequelize): void
   initTeam(sequelizeInstance);
   initTaskComment(sequelizeInstance);
   initTeamMember(sequelizeInstance);
+  initMessage(sequelizeInstance);
 
   console.log("Models initialized successfully");
 };
@@ -87,6 +91,10 @@ export const setupAssociations = () => {
   TaskComment.belongsTo(Task, { foreignKey: "task_id", as: "task" });
   TaskComment.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
+  // Message associations
+  Message.belongsTo(User, { foreignKey: "senderId", as: "sender" });
+  Message.belongsTo(User, { foreignKey: "receiverId", as: "receiver" });
+
   console.log("Model associations set up successfully");
 };
 
@@ -99,6 +107,7 @@ export {
   Team,
   TaskComment,
   TeamMember,
+  Message,
   sequelize,
 };
 
@@ -113,6 +122,7 @@ export default {
   Team,
   TaskComment,
   TeamMember,
+  Message,
   sequelize,
   initializeModels,
   setupAssociations,

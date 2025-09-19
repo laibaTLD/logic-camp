@@ -56,7 +56,7 @@ export async function seedDatabase() {
       email: 'admin@myteamcamp.com',
       password: adminPassword,
       role: 'admin',
-      isActive: true,
+      is_active: true,
       isApproved: true,
     });
 
@@ -67,7 +67,7 @@ export async function seedDatabase() {
       email: 'john@myteamcamp.com',
       password: userPassword,
       role: 'employee',
-      isActive: true,
+      is_active: true,
       isApproved: true,
     });
 
@@ -75,7 +75,7 @@ export async function seedDatabase() {
     const team = await Team.create({
       name: 'Development Team',
       description: 'Main development team for the project',
-      isActive: true,
+      is_active: true,
       createdById: admin.id,
     });
 

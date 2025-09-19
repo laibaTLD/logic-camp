@@ -36,7 +36,7 @@ export default function GoalsSection({ onCreate }: GoalsSectionProps) {
       body: JSON.stringify({
         title: updates.title,
         description: updates.description,
-        statusTitle: updates.status_title || updates.status,
+        statusTitle: updates.status_title,
         deadline: updates.deadline,
       })
     });
@@ -60,7 +60,7 @@ export default function GoalsSection({ onCreate }: GoalsSectionProps) {
   const filteredGoals = goals.filter(goal => 
     goal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (goal.description && goal.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (goal.project?.name && goal.project.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    (goal.project_id && goal.project_id.toString().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -166,7 +166,7 @@ export default function GoalsSection({ onCreate }: GoalsSectionProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-slate-300 mb-1">Status</label>
-                  <select value={editing.status_title || editing.status || 'todo'} onChange={e=>setEditing({ ...editing, status_title: e.target.value })} className="w-full rounded-xl bg-slate-800/50 border border-slate-600/50 text-white px-4 py-2">
+                  <select value={editing.status_title || 'todo'} onChange={e=>setEditing({ ...editing, status_title: e.target.value })} className="w-full rounded-xl bg-slate-800/50 border border-slate-600/50 text-white px-4 py-2">
                     <option value="todo">To Do</option>
                     <option value="inProgress">In Progress</option>
                     <option value="testing">Testing</option>
@@ -175,7 +175,7 @@ export default function GoalsSection({ onCreate }: GoalsSectionProps) {
                 </div>
                 <div>
                   <label className="block text-sm text-slate-300 mb-1">Deadline</label>
-                  <input type="date" value={editing.deadline || ''} onChange={e=>setEditing({ ...editing, deadline: e.target.value })} className="w-full rounded-xl bg-slate-800/50 border border-slate-600/50 text-white px-4 py-2" />
+                  <input type="date" value={editing.deadline ? new Date(editing.deadline).toISOString().split('T')[0] : ''} onChange={e=>setEditing({ ...editing, deadline: new Date(e.target.value) })} className="w-full rounded-xl bg-slate-800/50 border border-slate-600/50 text-white px-4 py-2" />
                 </div>
               </div>
               <div className="flex justify-end gap-2">

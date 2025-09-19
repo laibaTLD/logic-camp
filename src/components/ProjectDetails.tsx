@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import ProjectChat from '@/app/user/components/ProjectChat';
 import { useUser } from '@/lib/context/UserContext';
 import { updateProjectStatus } from '@/services/projectService';
 import { formatDate } from '@/utils/helpers';
 import { ProjectAttributes } from '@/models/Project';
 import ProjectGoalsNested from '@/components/ProjectGoalsNested';
+import StatusDropdown from '@/components/StatusDropdown';
 
 // Using standard HTML elements instead of missing UI components
 
@@ -57,13 +57,15 @@ export default function ProjectDetails({ project }: ProjectDetailsProps) {
   
   // Get current status for display
   const [projectStatus, setProjectStatus] = useState(getCurrentStatusDisplay());
+  const [selectedStatus, setSelectedStatus] = useState<string>(((project as any).status_title || 'todo'));
 
   const handleProjectStatusChange = async (newStatusTitle: string) => {
     try {
+      setSelectedStatus(newStatusTitle);
       await updateProjectStatus(project.id, newStatusTitle);
-      // Update local state - we'll need to fetch the updated project or status
-      // For now, just update the display
-      setProjectStatus(getCurrentStatusDisplay());
+      // Optimistically reflect change in badge
+      (project as any).status_title = newStatusTitle;
+      setProjectStatus(getStatusDisplayName(newStatusTitle));
     } catch (error) {
       console.error('Failed to update project status', error);
     }
@@ -87,11 +89,16 @@ export default function ProjectDetails({ project }: ProjectDetailsProps) {
           </div>
           <div>
             <label className="text-sm text-gray-400">Update Status</label>
-            {(user?.role === 'admin' || user?.role === 'teamLead') ? (
-              <div className="text-gray-300">Status management coming soon</div>
-            ) : (
-              <div className="text-gray-300">View only</div>
-            )}
+            <div className="mt-1">
+              <StatusDropdown
+                statuses={[]}
+                onStatusesChange={() => { /* no-op for employees */ }}
+                selectedStatus={selectedStatus}
+                onStatusSelect={handleProjectStatusChange}
+                entityType="project"
+                disabled={!(user?.role === 'employee')}
+              />
+            </div>
           </div>
           <div>
             <label className="text-sm text-gray-400">Start Date</label>
@@ -103,7 +110,18 @@ export default function ProjectDetails({ project }: ProjectDetailsProps) {
           </div>
           <div>
             <label className="text-sm text-gray-400">Team Members</label>
-            <p className="text-white">{project.team?.map((m: { id: number; name: string }) => m.name).join(', ') || 'None'}</p>
+            {(() => {
+              const flatMembers = (project as any).members;
+              const nestedMembers = (project as any).team?.members;
+              const names = Array.isArray(flatMembers)
+                ? flatMembers.map((m: any) => m.name)
+                : Array.isArray(nestedMembers)
+                ? nestedMembers.map((m: any) => m.name)
+                : [];
+              return (
+                <p className="text-white">{names.length > 0 ? names.join(', ') : 'None'}</p>
+              );
+            })()}
           </div>
         </div>
         <div>
@@ -116,12 +134,6 @@ export default function ProjectDetails({ project }: ProjectDetailsProps) {
       <section className="bg-gray-900/90 border border-white/20 rounded-xl p-6 space-y-4">
         <h2 className="text-xl font-semibold text-white">Goals</h2>
         <ProjectGoalsNested projectId={project.id} teamId={(project as any).team_id || (project as any).teamId} />
-      </section>
-
-      {/* Chat */}
-      <section className="bg-gray-900/90 border border-white/20 rounded-xl p-6 space-y-4">
-        <h2 className="text-xl font-semibold text-white">Project Chat</h2>
-        <ProjectChat projectId={project.id} />
       </section>
     </div>
   );

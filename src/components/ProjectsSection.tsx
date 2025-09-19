@@ -1,6 +1,6 @@
 import React from 'react';
 import { ProjectAttributes } from '@/models/Project';
-import UserProjectCard from '@/components/UserProjectCard';
+import ProjectCardUser from '@/components/user/ProjectCardUser';
 
 type ProjectsSectionProps = {
   projects: ProjectAttributes[];
@@ -10,16 +10,23 @@ export default function ProjectsSection({ projects }: ProjectsSectionProps) {
   return (
     <section className="mb-8">
       <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Projects</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {projects.length > 0 ? (
-          projects.map((project) => (
-            <UserProjectCard
+          projects.map((project, index) => (
+            <ProjectCardUser
               key={project.id}
-              id={project.id}
-              name={project.name}
-              description={project.description || ''}
-              endDate={(project as any).end_date || (project as any).endDate || undefined}
-              membersCount={Array.isArray((project as any).members) ? (project as any).members.length : undefined}
+              index={index}
+              project={{
+                id: project.id as number,
+                name: project.name,
+                description: project.description || '',
+                end_date: (project as any).end_date || undefined,
+                endDate: (project as any).endDate || undefined,
+                updatedAt: (project as any).updatedAt,
+                createdAt: (project as any).createdAt,
+                team: { members: Array.isArray((project as any).members) ? (project as any).members : [] },
+                status_title: (project as any).status_title,
+              }}
             />
           ))
         ) : (

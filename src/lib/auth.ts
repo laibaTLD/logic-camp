@@ -21,15 +21,17 @@ export interface AuthResult {
  */
 export async function verifyToken(request: NextRequest): Promise<AuthResult> {
   try {
-    // Try to get token from cookie first
-    let token = request.cookies.get('authToken')?.value;
-    
-    // If no cookie token, try Authorization header
+    // Prefer Authorization header over cookie to allow privileged tokens to override
+    let token: string | undefined;
+
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+
+    // Fallback to cookie if no Authorization header present
     if (!token) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        token = authHeader.substring(7);
-      }
+      token = request.cookies.get('authToken')?.value;
     }
     
     if (!token) {

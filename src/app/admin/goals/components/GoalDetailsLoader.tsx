@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import AdminGoalDetails from "./AdminGoalDetails";
+import AdminProjectLayout from "@/app/admin/projects/components/AdminProjectLayout";
 
 interface GoalDetailsLoaderProps {
   goalId: number;
@@ -45,63 +46,69 @@ export default function GoalDetailsLoader({ goalId }: GoalDetailsLoaderProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0b0b10] text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading goal details...</p>
+      <AdminProjectLayout>
+        <div className="min-h-[50vh] text-white flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p className="text-gray-400">Loading goal details...</p>
+          </div>
         </div>
-      </div>
+      </AdminProjectLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0b0b10] text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-400 mb-4">
-            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+      <AdminProjectLayout>
+        <div className="text-white flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="text-red-400 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-white mb-2">Error Loading Goal</h2>
+            <p className="text-gray-400 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+            >
+              Try Again
+            </button>
           </div>
-          <h2 className="text-xl font-semibold text-white mb-2">Error Loading Goal</h2>
-          <p className="text-gray-400 mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-          >
-            Try Again
-          </button>
         </div>
-      </div>
+      </AdminProjectLayout>
     );
   }
 
   if (!goal) {
     return (
-      <div className="min-h-screen bg-[#0b0b10] text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-gray-400 mb-4">
-            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.571M15 6.343A7.962 7.962 0 0112 5c-2.34 0-4.29 1.009-5.824 2.571" />
-            </svg>
+      <AdminProjectLayout>
+        <div className="text-white flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="text-gray-400 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29 1.009-5.824-2.571M15 6.343A7.962 7.962 0 0112 5c-2.34 0-4.29 1.009-5.824 2.571" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-white mb-2">Goal Not Found</h2>
+            <p className="text-gray-400 mb-4">The goal you're looking for doesn't exist or has been deleted.</p>
+            <a
+              href="/admin"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+            >
+              ← Back to Dashboard
+            </a>
           </div>
-          <h2 className="text-xl font-semibold text-white mb-2">Goal Not Found</h2>
-          <p className="text-gray-400 mb-4">The goal you're looking for doesn't exist or has been deleted.</p>
-          <a
-            href="/admin"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-          >
-            ← Back to Dashboard
-          </a>
         </div>
-      </div>
+      </AdminProjectLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0b10] text-white">
+    <AdminProjectLayout>
       {/* Page header */}
-      <div className="border-b border-white/10 bg-white/5 backdrop-blur-md">
+      <div className="border-b border-white/10 bg-white/5 backdrop-blur-md rounded-2xl overflow-hidden">
         <div className="mx-auto max-w-7xl px-6 py-6">
           {/* Breadcrumbs */}
           <nav className="text-sm text-gray-400 mb-3" aria-label="Breadcrumb">
@@ -113,7 +120,7 @@ export default function GoalDetailsLoader({ goalId }: GoalDetailsLoaderProps) {
               <li className="text-gray-200 truncate max-w-[40ch]" title={goal?.title}>{goal?.title}</li>
             </ol>
           </nav>
-
+          
           {/* Title row */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -133,7 +140,7 @@ export default function GoalDetailsLoader({ goalId }: GoalDetailsLoaderProps) {
               </a>
             </div>
           </div>
-
+          
           {/* Quick stats */}
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -155,13 +162,13 @@ export default function GoalDetailsLoader({ goalId }: GoalDetailsLoaderProps) {
           </div>
         </div>
       </div>
-
+      
       {/* Main content */}
-      <div className="mx-auto max-w-7xl px-6 py-8">
+      <div className="mx-auto max-w-7xl px-0 py-8">
         <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
           <AdminGoalDetails goal={goal} initialTasks={tasks} />
         </div>
       </div>
-    </div>
+    </AdminProjectLayout>
   );
 }

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { UserProvider } from "@/lib/context/UserContext";
 import "./globals.css";
+import Sidebar from "@/app/components/Sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,7 +31,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <UserProvider>
-          {children}
+          {/* Sidebar (fixed on the left) */}
+          {/* <Sidebar /> */}
+          {/* Main content shifted to the right on md+ screens */}
+          <div className="min-h-screen">
+            {children}
+          </div>
         </UserProvider>
         <Toaster
           position="top-right"

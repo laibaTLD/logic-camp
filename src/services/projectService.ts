@@ -20,14 +20,34 @@ const getBaseUrl = (): string => {
 
 const buildUrl = (path: string) => `${getBaseUrl()}${path}`;
 
+// Attach Authorization header when running in the browser and token exists
+const buildAuthHeaders = (): HeadersInit => {
+  const headers: Record<string, string> = {};
+  if (typeof window !== 'undefined') {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    } catch {}
+  }
+  return headers;
+};
+
 export const getProjects = async (): Promise<Project[]> => {
-  const res = await fetch(buildUrl(API_URL), { credentials: 'include', cache: 'no-store' });
+  const res = await fetch(buildUrl(API_URL), { 
+    credentials: 'include', 
+    cache: 'no-store',
+    headers: { ...buildAuthHeaders() }
+  });
   if (!res.ok) throw new Error("Failed to fetch projects");
   return res.json();
 };
 
 export const getProjectById = async (id: number): Promise<Project> => {
-  const res = await fetch(buildUrl(`${API_URL}/${id}`), { credentials: 'include', cache: 'no-store' });
+  const res = await fetch(buildUrl(`${API_URL}/${id}`), { 
+    credentials: 'include', 
+    cache: 'no-store',
+    headers: { ...buildAuthHeaders() }
+  });
   if (!res.ok) {
     let errMsg = "Failed to fetch project";
     try {
@@ -43,7 +63,7 @@ export const getProjectById = async (id: number): Promise<Project> => {
 export const updateProjectStatus = async (id: number, statusTitle: string) => {
   const res = await fetch(buildUrl(`${API_URL}/${id}`), {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...buildAuthHeaders() },
     body: JSON.stringify({ statusTitle }),
     credentials: 'include',
     cache: 'no-store'
@@ -66,7 +86,7 @@ export const updateProject = async (
 ) => {
   const res = await fetch(buildUrl(`${API_URL}/${id}`), {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...buildAuthHeaders() },
     body: JSON.stringify(updates),
     credentials: 'include',
     cache: 'no-store'
@@ -81,7 +101,7 @@ export type { Project };
 export const createProject = async (project: Omit<Project, "id">) => {
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...buildAuthHeaders() },
     body: JSON.stringify(project),
   });
   if (!res.ok) throw new Error("Failed to create project");

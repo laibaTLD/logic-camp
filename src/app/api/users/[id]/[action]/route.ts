@@ -22,6 +22,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const { User } = await getModels();
 
     // Check permissions
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
     if (decoded.role !== 'admin' && decoded.role !== 'teamLead') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
@@ -55,7 +56,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     switch (action) {
       case 'activate':
-        if (user.isActive) {
+        if (user.is_active) {
           return NextResponse.json({ error: 'User is already active' }, { status: 400 });
         }
         updateData = { isActive: true };
@@ -64,7 +65,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         break;
 
       case 'deactivate':
-        if (!user.isActive) {
+        if (!user.is_active) {
           return NextResponse.json({ error: 'User is already inactive' }, { status: 400 });
         }
         updateData = { isActive: false };
@@ -73,7 +74,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         break;
 
       case 'approve':
-        if (user.isApproved) {
+        if (user.is_approved) {
           return NextResponse.json({ error: 'User is already approved' }, { status: 400 });
         }
         updateData = { isApproved: true };
@@ -82,7 +83,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         break;
 
       case 'reject':
-        if (!user.isApproved) {
+        if (!user.is_approved) {
           return NextResponse.json({ error: 'User is already rejected' }, { status: 400 });
         }
         updateData = { isApproved: false, isActive: false };

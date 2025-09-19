@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
 import AdminProjectDetails from '../components/AdminProjectDetails';
 import ProjectDetailsLoader from '../components/ProjectDetailsLoader';
+import AdminProjectLayout from '../components/AdminProjectLayout';
 
 export default async function AdminProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -47,9 +48,9 @@ export default async function AdminProjectPage({ params }: { params: Promise<{ i
     const goalsCount = Array.isArray(initialGoals) ? initialGoals.length : 0;
 
     return (
-      <div className="min-h-screen bg-[#0b0b10] text-white">
+      <AdminProjectLayout>
         {/* Page header */}
-        <div className="border-b border-white/10 bg-white/5 backdrop-blur-md">
+        <div className="border-b border-white/10 bg-white/5 backdrop-blur-md rounded-2xl overflow-hidden">
           <div className="mx-auto max-w-7xl px-6 py-6">
             {/* Breadcrumbs */}
             <nav className="text-sm text-gray-400 mb-3" aria-label="Breadcrumb">
@@ -105,12 +106,12 @@ export default async function AdminProjectPage({ params }: { params: Promise<{ i
         </div>
 
         {/* Main content */}
-        <div className="mx-auto max-w-7xl px-6 py-8">
+        <div className="mx-auto max-w-7xl px-0 py-8">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-        <AdminProjectDetails project={project} initialGoals={initialGoals} />
+            <AdminProjectDetails project={project} initialGoals={initialGoals} />
           </div>
         </div>
-      </div>
+      </AdminProjectLayout>
     );
   } catch (_e) {
     // Network/URL issues -> client fallback

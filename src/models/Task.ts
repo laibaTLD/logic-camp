@@ -54,27 +54,53 @@ class Task extends Model<TaskAttributes, TaskCreationAttributes> implements Task
   // Instance methods for notification triggers
   async notifyTaskChanges(previousValues?: Partial<TaskAttributes>) {
     try {
-      // Get the models to fetch assignees and project information
-      const { getModels } = require('../lib/db');
-      const models = await getModels();
-      const { Project } = models;
+      // Get models with proper typing
+      const { Goal, Project } = this.sequelize.models;
       
       // Check if there's an assignee
       const assigneeId = this.assigned_to_id;
       
-      // Check if task has an assignee
-      if (assigneeId) {
-        // Fetch the goal to get project information
-        const goal = await models.Goal.findByPk(this.goal_id);
-        if (!goal) return;
-        
-        // Fetch the project with team and members
-        const project = await Project.findByPk(goal.project_id);
-        
-        if (project && project.team) {
-          // Notify the assignee
-          await notifyTaskAssigned(assigneeId, this.title, project.name, this.id);
-        }
+      if (!assigneeId) return;
+      
+      // Define the Project model type with the necessary properties
+      interface ProjectModel extends Model<any, any> {
+        id: number;
+        name: string;
+        team_id: number;
+      }
+
+      // Define the Goal model type with the project association
+      interface GoalModel extends Model<any, any> {
+        project?: ProjectModel;
+      }
+
+      // Fetch the goal with its project and team information
+      const goal = await (Goal as unknown as { findByPk: (id: number, options: any) => Promise<GoalModel | null> }).findByPk(this.goal_id, {
+        include: [{
+          model: Project,
+          as: 'project',
+          attributes: ['id', 'name', 'team_id']
+        }]
+      });
+      
+      if (!goal || !goal.project) return;
+      
+      // Notify the assignee about the task assignment
+      await notifyTaskAssigned(
+        assigneeId,
+        this.title,
+        goal.project.name,
+        this.id
+      );
+      
+      // Additional notification logic for task completion if needed
+      if (this.status_title === 'completed' && previousValues?.status_title !== 'completed') {
+        await notifyTaskCompleted(
+          [assigneeId],  // userIds should be an array
+          this.title,
+          goal.project.name,  // Add project name
+          this.id
+        );
       }
       
       // Check if task was completed (need to check status by name since we now use status_id)

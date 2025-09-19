@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import StatusDropdown from "@/components/StatusDropdown";
+import TaskCard from "./TaskCard";
+import EditTaskModal from "./EditTaskModal";
 
 interface AdminGoalDetailsProps {
   goal: any;
@@ -186,27 +188,48 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
 
   const currentStatusConfig = getStatusConfig(goalData.status_title);
 
+  // Edit Task modal wiring via window event
+  const [editingTask, setEditingTask] = useState<any | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  useEffect(() => {
+    const handler = (e: any) => {
+      const t = e?.detail?.task || tasks.find((tk) => (tk as any).id === e?.detail?.taskId);
+      if (t) {
+        setEditingTask(t);
+        setIsEditOpen(true);
+      }
+    };
+    window.addEventListener('edit-task-request', handler as any);
+    return () => window.removeEventListener('edit-task-request', handler as any);
+  }, [tasks]);
+
   return (
     <div className="space-y-6">
       {/* Goal Header */}
       <div className="flex items-start justify-between">
         <div className="flex-1">
           {editingGoal ? (
-            <div className="space-y-4">
-              <input
-                type="text"
-                value={goalData.title}
-                onChange={(e) => setGoalData(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full text-2xl font-bold bg-transparent border-b border-white/20 text-white focus:outline-none focus:border-white/40"
-                placeholder="Goal title"
-              />
-              <textarea
-                value={goalData.description}
-                onChange={(e) => setGoalData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full bg-transparent border border-white/20 rounded-lg p-3 text-white focus:outline-none focus:border-white/40 resize-none"
-                rows={3}
-                placeholder="Goal description"
-              />
+            <div className="space-y-5 rounded-2xl border border-white/10 bg-white/5 p-5">
+              <div className="space-y-3">
+                <label className="block text-sm text-gray-400">Title</label>
+                <input
+                  type="text"
+                  value={goalData.title}
+                  onChange={(e) => setGoalData(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full text-base sm:text-lg font-semibold bg-gray-800/60 text-gray-100 border border-white/10 rounded-xl px-3 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  placeholder="Goal title"
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="block text-sm text-gray-400">Description</label>
+                <textarea
+                  value={goalData.description}
+                  onChange={(e) => setGoalData(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full bg-gray-800/60 text-gray-100 border border-white/10 rounded-xl px-3 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+                  rows={4}
+                  placeholder="Goal description"
+                />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">Status</label>
@@ -224,21 +247,34 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
                     type="date"
                     value={goalData.deadline}
                     onChange={(e) => setGoalData(prev => ({ ...prev, deadline: e.target.value }))}
-                    className="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-gray-800/60 text-white border border-white/10 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 pt-2">
                 <button
                   onClick={handleUpdateGoal}
                   disabled={loading}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  className={`px-4 py-2 rounded-xl border font-semibold text-sm transition-all duration-300
+                    flex items-center justify-center gap-2 hover:scale-[1.02] relative z-20
+                    ${loading ? 'bg-indigo-500/20 border-indigo-400/40 text-indigo-300' : 'bg-indigo-600/90 border-indigo-500/50 text-white hover:bg-indigo-600'}`}
                 >
-                  {loading ? 'Saving...' : 'Save Changes'}
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Saving…</span>
+                    </>
+                  ) : 'Save Changes'}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setEditingGoal(false)}
-                  className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 rounded-xl border font-semibold text-sm transition-all duration-300
+                    flex items-center justify-center gap-2 hover:scale-[1.02] relative z-20
+                    bg-slate-800/60 border-white/10 text-slate-200 hover:bg-slate-700/60"
                 >
                   Cancel
                 </button>
@@ -268,18 +304,23 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
           <div className="flex gap-2">
             <button
               onClick={() => setEditingGoal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border font-semibold text-xs sm:text-sm transition-all duration-300
+                flex items-center justify-center gap-1.5 hover:scale-105 hover:-translate-y-0.5 relative z-20
+                bg-indigo-500/10 border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 hover:border-indigo-400/40"
             >
-              <Edit className="w-4 h-4" />
-              Edit Goal
+              <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Edit Goal</span>
             </button>
             <button
               onClick={handleDeleteGoal}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border font-semibold text-xs sm:text-sm transition-all duration-300
+                flex items-center justify-center gap-1.5 hover:scale-105 hover:-translate-y-0.5 relative z-20
+                ${loading ? 'bg-red-500/20 border-red-400/40 text-red-300' : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-400/40'}
+                disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0`}
             >
-              <Trash2 className="w-4 h-4" />
-              Delete Goal
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Delete Goal</span>
             </button>
           </div>
         )}
@@ -291,17 +332,19 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
           <h2 className="text-xl font-semibold text-white">Tasks ({tasks.length})</h2>
           <button
             onClick={() => setShowAddTask(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border font-semibold text-xs sm:text-sm transition-all duration-300
+              flex items-center justify-center gap-1.5 hover:scale-105 hover:-translate-y-0.5 relative z-20
+              bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-400/40"
           >
-            <Plus className="w-4 h-4" />
-            Add Task
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Add Task</span>
           </button>
         </div>
 
         {/* Add Task Form */}
         {showAddTask && (
-          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-white mb-4">Add New Task</h3>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <h3 className="text-base font-semibold text-white mb-4">Add New Task</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-400 mb-2">Title</label>
@@ -309,7 +352,7 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
                   type="text"
                   value={newTask.title}
                   onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-gray-800/60 text-gray-100 border border-white/10 rounded-xl px-3 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                   placeholder="Task title"
                 />
               </div>
@@ -318,8 +361,8 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
                 <textarea
                   value={newTask.description}
                   onChange={(e) => setNewTask(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500 resize-none"
-                  rows={2}
+                  className="w-full bg-gray-800/60 text-gray-100 border border-white/10 rounded-xl px-3 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none"
+                  rows={3}
                   placeholder="Task description"
                 />
               </div>
@@ -340,21 +383,40 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
                     type="date"
                     value={newTask.deadline}
                     onChange={(e) => setNewTask(prev => ({ ...prev, deadline: e.target.value }))}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-gray-800/60 text-white border border-white/10 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 pt-2">
                 <button
                   onClick={handleAddTask}
                   disabled={loading}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  className={`px-4 py-2 rounded-xl border font-semibold text-sm transition-all duration-300
+                    flex items-center justify-center gap-2 hover:scale-[1.02] relative z-20
+                    ${loading ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-300' : 'bg-emerald-600/90 border-emerald-500/50 text-white hover:bg-emerald-600'}
+                    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
                 >
-                  {loading ? 'Creating...' : 'Create Task'}
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Creating…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      <span>Create Task</span>
+                    </>
+                  )}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setShowAddTask(false)}
-                  className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 rounded-xl border font-semibold text-sm transition-all duration-300
+                    flex items-center justify-center gap-2 hover:scale-[1.02] relative z-20
+                    bg-slate-800/60 border-white/10 text-slate-200 hover:bg-slate-700/60"
                 >
                   Cancel
                 </button>
@@ -371,69 +433,26 @@ export default function AdminGoalDetails({ goal, initialTasks }: AdminGoalDetail
               <p>No tasks yet. Add your first task to get started!</p>
             </div>
           ) : (
-            tasks.map((task, idx) => {
-              const taskStatusConfig = getStatusConfig(task.status_title || task.status || 'todo');
-              return (
-                <div
-                  key={task.id}
-                  className="group animate-fadeInUp transform transition-all duration-700 hover:scale-[1.02] w-full mx-auto"
-                  style={{ animationDelay: `${0.06 * idx}s` }}
-                >
-                  <div
-                    className={`relative text-left w-full rounded-2xl border backdrop-blur-xl p-3 sm:p-4 
-                    overflow-hidden transition-all duration-500 ease-out
-                    border-white/10 bg-gradient-to-br from-slate-900/60 via-slate-800/30 to-slate-900/40 shadow-xl
-                    group-hover:border-white/30 group-hover:shadow-2xl`}
-                  >
-                    <div className="relative z-10">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-bold text-sm sm:text-lg leading-tight line-clamp-2 text-white">
-                            {task.title}
-                          </h3>
-                          {task.description && (
-                            <p className="mt-1 text-xs sm:text-sm text-gray-400 line-clamp-2 break-words">
-                              {task.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <StatusDropdown
-                            statuses={[]}
-                            onStatusesChange={() => {}}
-                            selectedStatus={task.status_title || (task as any).status || 'todo'}
-                            onStatusSelect={(status) => handleUpdateTaskStatus(task.id, status)}
-                            entityType="task"
-                          />
-                          <button
-                            onClick={() => handleDeleteTask(task.id)}
-                            className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                            title="Delete task"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        <div className="flex items-center gap-2 text-xs sm:text-sm">
-                          <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: taskStatusConfig.color }} />
-                          <span className="text-gray-300 capitalize">{taskStatusConfig.label}</span>
-                        </div>
-                        {task.deadline && (
-                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400 justify-end">
-                            <Calendar className="w-4 h-4" />
-                            <span>Due: {new Date(task.deadline).toLocaleDateString()}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
+            tasks.map((task, idx) => (
+              <TaskCard 
+                key={task.id || idx}
+                task={task}
+                index={idx}
+                onUpdateStatus={handleUpdateTaskStatus}
+                onDeleteTask={handleDeleteTask}
+              />
+            ))
           )}
         </div>
       </div>
+      <EditTaskModal
+        isOpen={isEditOpen}
+        task={editingTask}
+        onClose={() => setIsEditOpen(false)}
+        onSaved={(updated) => {
+          setTasks((prev) => (prev || []).map((t) => ((t as any).id === (updated as any).id ? { ...(t as any), ...(updated as any) } : t)) as any);
+        }}
+      />
     </div>
   );
 }

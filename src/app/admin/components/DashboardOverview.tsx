@@ -33,8 +33,8 @@ export default function DashboardOverview({
   const teamsWithMembers = teams.filter(team => team.members && team.members.length > 0).length;
   
   const totalProjects = projects.length;
-  const activeProjects = projects.filter(project => project.status === 'active').length;
-  const completedProjects = projects.filter(project => project.status === 'completed').length;
+  const activeProjects = projects.filter(project => project.status_title === 'active').length;
+  const completedProjects = projects.filter(project => project.status_title === 'completed').length;
   
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(task => task.completed).length;

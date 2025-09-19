@@ -17,15 +17,26 @@ export async function GET(req: NextRequest) {
     const models = await getModels();
     const { Project, Team, User } = models;
 
-    // Fetch projects with team and team members
+    // Admins: see all projects. Non-admins: only projects whose team includes the user.
+    const isAdmin = user.role === 'admin';
+
     const projects = await Project.findAll({
       include: [
-        { 
-          model: Team, 
+        {
+          model: Team,
           as: 'team',
+          required: !isAdmin, // inner join for non-admins to enforce membership filter
           include: [
-            { model: User, as: 'members', attributes: { exclude: ['password'] } }
-          ] 
+            {
+              model: User,
+              as: 'members',
+              attributes: { exclude: ['password'] },
+              // Apply membership filter only for non-admins
+              ...(isAdmin
+                ? {}
+                : { where: { id: user.id }, required: true })
+            }
+          ]
         },
         {
           model: User,

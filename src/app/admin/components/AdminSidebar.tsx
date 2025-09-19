@@ -9,7 +9,7 @@ import {
   FlaskConical,
   Archive,
   Settings,
-  Target
+  MessageCircle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -29,6 +29,7 @@ export default function AdminSidebar({ activeSection, onSectionChange, onCreateT
     { id: 'users', label: 'Users', icon: Users, description: 'Manage Users' },
     { id: 'teams', label: 'Teams', icon: UsersRound, description: 'Team Management' },
     { id: 'projects', label: 'Projects', icon: FolderOpen, description: 'Project Management' },
+    { id: 'messages', label: 'Messages', icon: MessageCircle, description: 'Chat & Communication' },
   ];
 
   const handleSectionClick = (sectionId: string) => {
@@ -126,6 +127,26 @@ export default function AdminSidebar({ activeSection, onSectionChange, onCreateT
                   >
                     <Archive className="w-4 h-4 text-slate-400" />
                     <span className="text-sm">Archived Projects</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Nested items under Messages */}
+              {item.id === 'messages' && (
+                <div className="ml-8 mt-1 space-y-1">
+                  <button
+                    onClick={() => { onSectionChange('messages-individual'); setIsMobileOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-slate-300 hover:bg-slate-700/40 hover:text-white transition-colors border border-transparent hover:border-slate-600/40"
+                  >
+                    <MessageCircle className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm">Individual Chats</span>
+                  </button>
+                  <button
+                    onClick={() => { onSectionChange('messages-group'); setIsMobileOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-slate-300 hover:bg-slate-700/40 hover:text-white transition-colors border border-transparent hover:border-slate-600/40"
+                  >
+                    <Users className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm">Group Chats</span>
                   </button>
                 </div>
               )}

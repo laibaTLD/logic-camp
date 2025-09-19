@@ -66,10 +66,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate role
-    const validRoles = ['admin', 'teamLead', 'employee'];
+    const validRoles = ['admin', 'teamLead', 'team_lead', 'employee'];
     if (!validRoles.includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
+
+    // Normalize role to database enum (team_lead)
+    const dbRole = role === 'teamLead' ? 'team_lead' : role;
 
     // Check if user already exists
     const existingUser = await User.findOne({ where: { email } });
@@ -81,11 +84,11 @@ export async function POST(request: NextRequest) {
     const user = await User.create({
       name,
       email,
-      password, // Password will be hashed by the model hook
-      role,
-      isActive: true,
-      isApproved: true // Admin-created users are auto-approved
-    });
+      password, // Password will be hashed by the model hook (see model hooks)
+      role: dbRole,
+      is_active: true,
+      is_approved: true // Admin-created users are auto-approved
+    } as any);
 
     // Log activity
     await logActivity(request, {

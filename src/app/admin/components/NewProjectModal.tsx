@@ -54,9 +54,7 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
         name: name.trim(),
         description: description.trim(),
         teamId: selectedTeam,
-        status: status as any,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        statusTitle: status as any,
       });
       toast.success(`Project "${name}" created successfully!`);
       setName("");

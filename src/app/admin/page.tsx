@@ -15,11 +15,14 @@ import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
 import TeamDeleteConfirmationModal from "../../components/TeamDeleteConfirmationModal";
 import GoalsSection from "./components/GoalsSection";
 import GoalsCreatePage from "./components/GoalsCreatePage";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, MessageCircle } from "lucide-react";
 import TeamGrid from "../../components/TeamGrid";
 import EditTeamModal from "./components/EditTeamModal";
 import TaskGrid from "../../components/TaskGrid";
 import AdminProjectsGrid from "./components/ProjectsGrid";
+import ChatPanel from "./components/ChatPanel";
+import ChatNotification from "./components/ChatNotification";
+import MessagesSection from "./components/MessagesSection";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -31,6 +34,9 @@ export default function AdminDashboard() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<{ id: number; name: string } | null>(null);
   const [editingTeam, setEditingTeam] = useState<{ id: number; name: string; members?: any[] } | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const handleEditTeam = (team: { id: number; name: string; members?: any[] }) => {
     setEditingTeam(team);
@@ -364,6 +370,15 @@ export default function AdminDashboard() {
         return (
           <GoalsCreatePage onBack={() => setActiveSection('goals')} />
         );
+      case 'messages':
+      case 'messages-individual':
+      case 'messages-group':
+        return (
+          <MessagesSection
+            currentUser={currentUser}
+            onOpenChat={() => setIsChatOpen(true)}
+          />
+        );
       default:
         return (
           <DashboardOverview
@@ -385,7 +400,7 @@ export default function AdminDashboard() {
       try {
         const adminToken = localStorage.getItem('adminToken');
         if (!adminToken) {
-          router.push('/admin/adminLogin');
+          router.push('/admin/login');
           return;
         }
 
@@ -399,7 +414,7 @@ export default function AdminDashboard() {
         if (!verifyResponse.ok) {
           localStorage.removeItem('adminToken');
           localStorage.removeItem('user');
-          router.push('/admin/adminLogin');
+          router.push('/admin/login');
           return;
         }
 
@@ -407,19 +422,31 @@ export default function AdminDashboard() {
         if (!verifyData.valid) {
           localStorage.removeItem('adminToken');
           localStorage.removeItem('user');
-          router.push('/admin/adminLogin');
+          router.push('/admin/login');
           return;
         }
 
         setIsAuthenticated(true);
+        setCurrentUser(verifyData.user);
       } catch (err) {
         console.error('Auth verification failed:', err);
-        router.push('/admin/adminLogin');
+        router.push('/admin/login');
       }
     };
 
     verifyAdminAuth();
   }, [router]);
+
+  // Handle new message notifications
+  const handleNewMessage = (message: any) => {
+    if (message.senderId !== currentUser?.id) {
+      setNotifications(prev => [...prev, message]);
+    }
+  };
+
+  const removeNotification = (messageId: number) => {
+    setNotifications(prev => prev.filter(notif => notif.id !== messageId));
+  };
 
   const {
     users,
@@ -483,13 +510,26 @@ export default function AdminDashboard() {
            onCreateProject={() => setActiveSection('create-project')}
          />
  
-         <main className="flex-1 lg:ml-80 transition-all duration-300 animate-fadeIn">
-           <Header />
-           
-           <div className="px-2 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-6 lg:py-8">
-               {renderContent()}
-           </div>
-         </main>
+        <main className="flex-1 lg:ml-80 transition-all duration-300 animate-fadeIn">
+          <Header>
+            <button
+              onClick={() => setIsChatOpen(!isChatOpen)}
+              className="relative inline-flex items-center gap-2 rounded-xl border border-white/10 px-3.5 py-2 text-sm hover:bg-white/5 transition-colors"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">Chat</span>
+              {notifications.length > 0 && (
+                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {notifications.length}
+                </div>
+              )}
+            </button>
+          </Header>
+          
+          <div className="px-2 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-6 lg:py-8">
+              {renderContent()}
+          </div>
+        </main>
        </div>
 
       <NewTeamModal
@@ -516,6 +556,28 @@ export default function AdminDashboard() {
         onSaved={async () => { await fetchTeams(teamsPage); }}
         onError={(m) => toast.error(m)}
       />
+
+      {/* Chat Panel */}
+      {currentUser && (
+        <ChatPanel
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          currentUser={currentUser}
+        />
+      )}
+
+      {/* Notifications */}
+      {notifications.map((notification) => (
+        <ChatNotification
+          key={notification.id}
+          message={notification}
+          onClose={() => removeNotification(notification.id)}
+          onOpenChat={() => {
+            setIsChatOpen(true);
+            removeNotification(notification.id);
+          }}
+        />
+      ))}
 
     </div>
   );

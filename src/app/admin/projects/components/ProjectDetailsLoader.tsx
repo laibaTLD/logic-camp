@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import AdminProjectDetails from './AdminProjectDetails';
+import AdminProjectLayout from './AdminProjectLayout';
 import { getProjectById } from '@/services/projectService';
 
 export default function ProjectDetailsLoader({ projectId }: { projectId: number }) {
@@ -27,26 +28,30 @@ export default function ProjectDetailsLoader({ projectId }: { projectId: number 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0b0b10] text-white p-8 flex items-center justify-center">
-        <div className="animate-pulse">Loading project…</div>
-      </div>
+      <AdminProjectLayout>
+        <div className="min-h-[50vh] text-white p-8 flex items-center justify-center">
+          <div className="animate-pulse">Loading project…</div>
+        </div>
+      </AdminProjectLayout>
     );
   }
 
   if (error || !project) {
     return (
-      <div className="min-h-screen bg-[#0b0b10] text-white p-8">
-        <div className="max-w-3xl mx-auto bg-gray-900/90 border border-white/20 rounded-xl p-6">
-          <h1 className="text-xl font-semibold text-red-300 mb-2">Unable to load project</h1>
-          <p className="text-gray-400">{error || 'Project not found'}</p>
+      <AdminProjectLayout>
+        <div className="text-white p-8">
+          <div className="max-w-3xl mx-auto bg-gray-900/90 border border-white/20 rounded-xl p-6">
+            <h1 className="text-xl font-semibold text-red-300 mb-2">Unable to load project</h1>
+            <p className="text-gray-400">{error || 'Project not found'}</p>
+          </div>
         </div>
-      </div>
+      </AdminProjectLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0b10] text-white p-8">
+    <AdminProjectLayout>
       <AdminProjectDetails project={project} />
-    </div>
+    </AdminProjectLayout>
   );
 }
