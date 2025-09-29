@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Users, UserCheck, Crown, Star } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Trash2, Users, Edit, UserCheck, Crown, Star } from 'lucide-react';
 
 interface TeamMember {
   id: number;

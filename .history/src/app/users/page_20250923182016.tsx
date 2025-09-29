@@ -81,8 +81,7 @@ const UsersPage: React.FC<{}> = () => {
           description: 'Failed to load users',
           variant: 'destructive'
         });
-      }
-    } catch (error) {
+      } catch (error) {
       console.error('Error fetching users:', error);
       toast({
         title: 'Error',

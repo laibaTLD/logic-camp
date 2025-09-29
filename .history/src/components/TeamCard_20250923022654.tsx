@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Users, UserCheck, Crown, Star } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Trash2, Users, Edit, UserCheck, Crown, Star } from 'lucide-react';
 
 interface TeamMember {
   id: number;
@@ -20,7 +21,8 @@ interface TeamCardProps {
   index: number;
 }
 
-export default function TeamCard({ team, index }: TeamCardProps) {
+export default function TeamCard({ team, index, onDeleteTeam, onEditTeam, deletingTeamId }: TeamCardProps) {
+  const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
 
   // Determine team size category for theming

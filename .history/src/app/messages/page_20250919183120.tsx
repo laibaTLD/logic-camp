@@ -66,30 +66,29 @@ export default function MessagesPage() {
       s.emit("joinUser", user.userId);
     });
     s.on("disconnect", () => setIsConnected(false));
-    s.on("newMessage", (message: IMessage | unknown) => {
-      // Guard against bad payloads without triggering error overlays in dev
-      if (!message || typeof message !== "object") {
-        console.warn("Ignored invalid newMessage payload", message);
+    s.on("newMessage", (message: IMessage) => {
+      // Ensure message and chatType are defined
+      if (!message) {
+        console.error("Received undefined or null message");
         return;
       }
-
-      const safeMessage = message as IMessage;
+      
       // Set a default chatType if it's missing
-      const chatType = (safeMessage as any).chatType || "individual";
+      const chatType = message.chatType || "individual";
       
       const isForCurrentChat = selectedChat
         ? chatType === "group"
           ? selectedChat.type === "group"
           : (selectedChat.type === "individual" &&
-            ((safeMessage.senderId === selectedChat.user?.id && user.userId === safeMessage.receiverId) ||
-              (safeMessage.receiverId === selectedChat.user?.id && user.userId === safeMessage.senderId)))
+            ((message.senderId === selectedChat.user?.id && user.userId === message.receiverId) ||
+              (message.receiverId === selectedChat.user?.id && user.userId === message.senderId)))
         : false;
 
-      setMessages((prev) => (isForCurrentChat ? [...prev, safeMessage] : prev));
+      setMessages((prev) => (isForCurrentChat ? [...prev, message] : prev));
 
       // Track unread when not sent by current user and not in the current chat
-      if (safeMessage.senderId !== user.userId && !isForCurrentChat) {
-        const key = chatType === "group" ? "group" : String(safeMessage.senderId);
+      if (message.senderId !== user.userId && !isForCurrentChat) {
+        const key = chatType === "group" ? "group" : String(message.senderId);
         setUnread((prev) => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
         // Toast notification for new message
         toast.custom(
@@ -101,7 +100,7 @@ export default function MessagesPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-900 truncate">New message</div>
-                  <div className="text-xs text-gray-600 truncate">{safeMessage.sender?.name || 'Someone'}: {safeMessage.content}</div>
+                  <div className="text-xs text-gray-600 truncate">{message.sender?.name || 'Someone'}: {message.content}</div>
                 </div>
               </div>
             </div>

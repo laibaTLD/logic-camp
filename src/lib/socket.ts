@@ -32,12 +32,26 @@ export function initIO(server: any) {
         console.log(`User ${userId} joined messaging`);
       });
 
-      // Handle message events
+      // Handle message events with basic validation
       socket.on('sendMessage', (message) => {
-        if (message.chatType === 'group') {
-          io.emit('newMessage', message);
-        } else {
-          socket.to(`user_${message.receiverId}`).emit('newMessage', message);
+        try {
+          if (!message || typeof message !== 'object') {
+            console.warn('Dropping invalid sendMessage payload', message);
+            return;
+          }
+          const chatType = (message as any).chatType || 'individual';
+          if (chatType === 'group') {
+            io.emit('newMessage', message);
+          } else {
+            const receiverId = (message as any).receiverId;
+            if (receiverId == null) {
+              console.warn('sendMessage missing receiverId for individual chat', message);
+              return;
+            }
+            socket.to(`user_${receiverId}`).emit('newMessage', message);
+          }
+        } catch (e) {
+          console.warn('sendMessage handling failed', e);
         }
       });
 
